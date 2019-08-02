@@ -108,15 +108,18 @@ if __name__ == "__main__":
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
-    data_root = os.path.join(args.data_root, 'images/train2017')
+    train_root = os.path.join(args.data_root, 'images/train2017')
+    val_root = os.path.join(args.data_root, 'images/val2017')
+    test_root = os.path.join(args.data_root, 'images/test2017')
+
     train_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_train2017.json')
     val_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_val2017.json')
     test_annFile = os.path.join(args.annFile, 'annotations/image_info_test2017/image_info_test2017.json')   
 
-    train_data = CocoDetection(root=data_root, annFile=train_annFile, transform=train_transform)
+    train_data = CocoDetection(root=train_root, annFile=train_annFile, transform=train_transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
-    val_data = CocoDetection(root=data_root, annFile=val_annFile, transform=val_transform)
+    val_data = CocoDetection(root=val_root, annFile=val_annFile, transform=val_transform)
     val_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=False)
 
     net = AEs(pretrained_net=VGGNet(requires_grad=True), n_class=3).cuda()
@@ -138,7 +141,7 @@ if __name__ == "__main__":
             best_loss = val_loss
 
     net = torch.load("saves/model.pt")
-    test_data = CocoDetection(root=data_root, annFile=test_annFile, transform=val_transform)
+    test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
     test_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=False)
 
     test_loss, test_acc = performance(net, test_loader)
