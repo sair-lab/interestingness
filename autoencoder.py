@@ -215,6 +215,9 @@ class AEs(nn.Module):
 
         return score  # size=(N, n_class, x.H/1, x.W/1)
 
+    def encoding(self, x):
+        return self.pretrained_net(x)['x5']
+
 
 class VGGNet(VGG):
     def __init__(self, pretrained=True, model='vgg16', requires_grad=True, remove_fc=True, show_params=False):

@@ -91,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("--gamma", type=float, default=0.1, help="learning rate multiplier")
     parser.add_argument("--milestones", type=int, default=100, help="milestones for applying multiplier")
     parser.add_argument("--epochs", type=int, default=150, help="number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=50, help="number of minibatch size")
+    parser.add_argument("--batch-size", type=int, default=15, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -100,13 +100,13 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(224),
+            transforms.RandomResizedCrop(384),
             transforms.RandomRotation(20),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     val_transform = transforms.Compose([
-            transforms.RandomResizedCrop(224),
+            transforms.RandomResizedCrop(384),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -125,14 +125,14 @@ if __name__ == "__main__":
     val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
     net = AEs(pretrained_net=VGGNet(requires_grad=True), n_class=3).cuda()
-    net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
+    # net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[args.milestones], gamma=args.gamma)
 
     print('number of parameters:', count_parameters(net))
-    best_loss = 1e10
+    best_loss = float('Inf')
     for epoch in range(args.epochs):
         train_loss = train(train_loader, net)
         val_loss = performance(val_loader, net) # validate
