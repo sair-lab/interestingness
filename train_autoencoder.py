@@ -123,6 +123,8 @@ if __name__ == "__main__":
     val_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=False)
 
     net = AEs(pretrained_net=VGGNet(requires_grad=True), n_class=3).cuda()
+    net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
+
     criterion = nn.MSELoss()
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[args.milestones], gamma=args.gamma)
