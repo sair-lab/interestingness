@@ -63,14 +63,14 @@ def train(loader, net):
 
 
 def performance(loader, net):
-    test_loss, correct, total = 0, 0, 0
+    test_loss = 0
     with torch.no_grad():
         for batch_idx, (inputs, _) in enumerate(loader):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs = net(inputs)
-            loss = criterion(outputs, outputs)
+            loss = criterion(outputs, inputs)
             test_loss += loss.item()
 
     return test_loss/(batch_idx+1)
@@ -86,6 +86,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets/coco', help="dataset root folder")
     parser.add_argument("--annFile", type=str, default='/data/datasets/coco', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/model.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--gamma", type=float, default=0.1, help="learning rate multiplier")
     parser.add_argument("--milestones", type=int, default=100, help="milestones for applying multiplier")
@@ -93,7 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=50, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
-    parser.add_argument('--seed', type=int, default=3, help='Random seed.')
+    parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -129,22 +130,21 @@ if __name__ == "__main__":
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[args.milestones], gamma=args.gamma)
 
-
     print('number of parameters:', count_parameters(net))
     best_loss = 1e10
     for epoch in range(args.epochs):
         train_loss = train(train_loader, net)
         val_loss = performance(val_loader, net) # validate
-        print("epoch: %d, train_loss: %.4f, val_loss: %.4f, val_acc: %.2f" % (epoch, train_loss, val_loss))
+        print("epoch: %d, train_loss: %.4f, val_loss: %.4f" % (epoch, train_loss, val_loss))
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, "saves/model.pt")
+            torch.save(net, args.model_save)
             best_loss = val_loss
 
-    net = torch.load("saves/model.pt")
+    net = torch.load(args.model_save)
     test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
     test_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=False)
 
-    test_loss, test_acc = performance(net, test_loader)
-    print('val_acc: %.2f, test_loss, %.4f test_acc: %.2f'%(best_loss, test_loss, test_acc))
+    test_loss = performance(test_loader, net)
+    print('val_loss: %.2f, test_loss, %.4f'%(best_loss, test_loss))
