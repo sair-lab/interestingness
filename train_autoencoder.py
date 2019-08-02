@@ -106,6 +106,7 @@ if __name__ == "__main__":
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     val_transform = transforms.Compose([
+            transforms.RandomResizedCrop(224),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     val_data = CocoDetection(root=val_root, annFile=val_annFile, transform=val_transform)
-    val_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=False)
+    val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
     net = AEs(pretrained_net=VGGNet(requires_grad=True), n_class=3).cuda()
     net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
@@ -144,7 +145,7 @@ if __name__ == "__main__":
 
     net = torch.load(args.model_save)
     test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
-    test_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=False)
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     test_loss = performance(test_loader, net)
     print('val_loss: %.2f, test_loss, %.4f'%(best_loss, test_loss))
