@@ -33,36 +33,36 @@ import torch.nn.functional as F
 
 class Memory(nn.Module):
     """Memory bank for NTM."""
-    def __init__(self, N=2000, M=512):
+    def __init__(self, N=2000, C=512, H=7, W=7):
         """Initialize the Memory matrix.
-        N: Number of rows in the memory.
-        M: Number of columns/features in the memory.
+        N: Number of Cubes in the memory.
+        C: Channel of cubes in the memory
+        H: Height of cubes in the memory
+        W: Number of cubes in the memory
         """
         super(Memory, self).__init__()
-        self.N,self.M = N, M
-        self.register_buffer('memory', torch.Tensor(N, M))
+        self.N, self.C, self.H, self.W = N, C, H, W
+        self.register_buffer('memory', torch.Tensor(N, C, H, W))
         self.reset_parameters()
 
     def reset_parameters(self):
-        stdev = 1 / (np.sqrt(self.N + self.M))
+        stdev = 1 / (np.sqrt(self.N*self.C*self.H*self. W))
         nn.init.uniform_(self.memory, -stdev, stdev)
 
     def size(self):
-        return self.N, self.M
+        return (self.N, self.C, self.H, self.W)
 
     def read(self, w):
-        return torch.matmul(w.unsqueeze(1), self.memory).squeeze(1)
+        w = w.view(w.size(0), self.N, 1, 1, 1)
+        return torch.sum(w*self.memory,dim=1)
 
-    def write(self, w, e, a):
-        self.prev_mem = self.memory
-        self.memory = torch.Tensor(self.batch_size, self.N, self.M)
-        erase = torch.matmul(w.unsqueeze(-1), e.unsqueeze(1))
-        add = torch.matmul(w.unsqueeze(-1), a.unsqueeze(1))
-        self.memory = self.prev_mem * (1 - erase) + add
+    def write(self, w, add):
+        experience = torch.sum(w.view(w.size(0),self.N,1,1,1) * add.unsqueeze(1), dim=0)
+        self.memory = self.memory + experience
 
     def address(self, key, strength, sharpen):
-        """NTM Addressing (according to section 3.3).
-        Returns a softmax weighting over the rows of the memory matrix.
+        """
+        Returns a softmax weighting over the memory cubes.
 
         key: The key vector.
         strength: The key strength (focus).
@@ -74,11 +74,28 @@ class Memory(nn.Module):
         return w
 
     def _similarity(self, key, strength):
-        key = key.unsqueeze(1)
-        w = F.softmax(strength * F.cosine_similarity(self.memory + 1e-16, key + 1e-16, dim=-1), dim=1)
+        key = key.view(key.size(0), 1, -1)
+        memory = self.memory.view(self.N, -1)
+        w = F.softmax(strength * F.cosine_similarity(memory, key, dim=-1), dim=1)
         return w
 
-    def _sharpen(self, ŵ, γ):
-        w = ŵ ** γ
+    def _sharpen(self, w, sharpen):
+        w = w ** sharpen
         w = torch.div(w, torch.sum(w, dim=1).view(-1, 1) + 1e-16)
         return w
+
+
+if __name__ == "__main__":
+    N, C, H, W = 2000, 512, 7, 7
+    B = 2
+    mem = Memory(N, C, H, W)
+    key = torch.FloatTensor(B, C, H, W)
+    t = torch.FloatTensor([0.3]*B).view(B,1)
+    s = torch.FloatTensor([0.7]*B).view(B,1)
+
+    w = mem.address(key, t, s)
+    x = mem.read(w)
+    # e = torch.FloatTensor(B, C, H, W)
+    a = torch.FloatTensor(B, C, H, W)
+    mem.write(w, a)
+    print(x.size())
