@@ -36,8 +36,8 @@ class HeadBase(nn.Module):
     def __init__(self, memory):
         super(HeadBase, self).__init__()
         self.memory = memory
-        _,C,H,W = memory.size()
-        self.embeddings_size = C*H*W
+        _,self.C,self.H,self.W = memory.size()
+        self.embeddings_size = self.C*self.H*self.W
 
     def is_read_head(self):
         return NotImplementedError
@@ -55,6 +55,7 @@ class ReadHead(HeadBase):
         super(ReadHead, self).__init__(memory)
         self.strength = nn.Linear(self.embeddings_size, 1)
         self.sharpen = nn.Linear(self.embeddings_size, 1)
+        self.transform = nn.Conv2d(in_channels=self.C, out_channels=self.C, kernel_size=1, groups=self.C)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -68,6 +69,7 @@ class ReadHead(HeadBase):
         return True
 
     def forward(self, embeddings):
+        embeddings = self.transform(embeddings)
         coding = embeddings.view(embeddings.size(0),-1)
         strength, sharpen = self.strength(coding), self.sharpen(coding)
         w = self._address_memory(embeddings, strength, sharpen)
@@ -79,6 +81,7 @@ class WriteHead(HeadBase):
         super(WriteHead, self).__init__(memory)
         self.strength = nn.Linear(self.embeddings_size, 1)
         self.sharpen = nn.Linear(self.embeddings_size, 1)
+        self.transform = nn.Conv2d(in_channels=self.C, out_channels=self.C, kernel_size=1, groups=self.C)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -92,6 +95,7 @@ class WriteHead(HeadBase):
         return False
 
     def forward(self, embeddings):
+        embeddings = self.transform(embeddings)
         coding = embeddings.view(embeddings.size(0),-1)
         strength, sharpen = self.strength(coding), self.sharpen(coding)
         w = self._address_memory(embeddings, strength, sharpen)
