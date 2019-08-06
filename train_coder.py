@@ -94,8 +94,6 @@ if __name__ == "__main__":
     parser.add_argument("--annFile", type=str, default='/data/datasets/coco', help="learning rate")
     parser.add_argument("--model-save", type=str, default='saves/coder.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-3, help="learning rate")
-    parser.add_argument("--gamma", type=float, default=0.1, help="learning rate multiplier")
-    parser.add_argument("--milestones", type=int, default=50, help="milestones for applying multiplier")
     parser.add_argument("--epochs", type=int, default=600, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
@@ -131,6 +129,9 @@ if __name__ == "__main__":
     val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
     net = Interest()
+    if torch.cuda.is_available():
+        net = net.cuda()
+
     net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
