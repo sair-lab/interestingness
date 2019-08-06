@@ -15,9 +15,20 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
 from coder import Encoder, Decoder
-from interest import Interest
 from memory import Memory
 from head import ReadHead, WriteHead
+
+class Interest(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder = Encoder()
+        self.decoder = Decoder()
+
+    def forward(self, x):
+        coding = self.encoder(x)
+        output = self.decoder(coding)
+        return output
+
 
 class Interestingness(nn.Module):
     def __init__(self, N, C, H, W):
