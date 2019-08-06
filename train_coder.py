@@ -94,14 +94,20 @@ if __name__ == "__main__":
     parser.add_argument("--annFile", type=str, default='/data/datasets/coco', help="learning rate")
     parser.add_argument("--model-save", type=str, default='saves/coder.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-3, help="learning rate")
-    parser.add_argument("--epochs", type=int, default=600, help="number of training epochs")
+    parser.add_argument("--factor", type=float, default=0.1**0.5, help="ReduceLROnPlateau factor")
+    parser.add_argument("--min-lr", type=float, default=5e-5, help="minimum lr for ReduceLROnPlateau")
+    parser.add_argument("--patience", type=int, default=5, help="patience of epochs for ReduceLROnPlateau")
+    parser.add_argument("--epochs", type=int, default=150, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
+    parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
     parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
+    with open(args.model_save+'.output','a+') as f:
+        f.write(str(args)+'\n')
 
     train_transform = transforms.Compose([
             transforms.RandomResizedCrop(224),
@@ -135,9 +141,9 @@ if __name__ == "__main__":
     net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
-    tvloss = TVLoss(0.1)
+    tvloss = TVLoss(args.alpha)
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
-    scheduler = ReduceLROnPlateau(optimizer, factor=0.1**0.5, verbose=True, min_lr=5e-5, patience=5)
+    scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
@@ -146,7 +152,8 @@ if __name__ == "__main__":
         val_loss = performance(val_loader, net) # validate
         scheduler.step(val_loss)
 
-        print("epoch: %d, train_loss: %.4f, val_loss: %.4f" % (epoch, train_loss, val_loss))
+        with open(args.model_save+'.output','a+') as f:
+            f.write("epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss))
 
         if val_loss < best_loss:
             print("New best Model, saving...")
