@@ -43,7 +43,7 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from autoencoder import VGGNet, AEs, AE8x, AE8s, AE32s, AE16s
-
+import torch.nn.functional as F
 
 def performance(loader, net):
     test_loss = 0
@@ -54,10 +54,11 @@ def performance(loader, net):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
-            outputs = net(inputs)
-            loss = criterion(outputs, inputs)
+            coding = net.encoding(net, inputs)
+            output = net.decoding(net, coding)
+            show_batch(torch.cat([inputs,output], dim=0).cpu())
+            loss = criterion(output, inputs)
             test_loss += loss.item()
-            show_batch(torch.cat([inputs,outputs], dim=0).cpu())
 
     return test_loss/(batch_idx+1)
 
@@ -67,10 +68,27 @@ def count_parameters(model):
 
 
 def show_batch(batch):
+    min_v = torch.min(batch)
+    range_v = torch.max(batch) - min_v
+    if range_v > 0:
+        batch = (batch - min_v) / range_v
+    else:
+        batch = torch.zeros(batch.size())
     grid = torchvision.utils.make_grid(batch)
     plt.imshow(grid.numpy()[::-1].transpose((1, 2, 0)))
     plt.title('Batch from dataloader')
     plt.show()
+
+
+def save_batch(batch, batch_idx):
+    min_v = torch.min(batch)
+    range_v = torch.max(batch) - min_v
+    if range_v > 0:
+        batch = (batch - min_v) / range_v
+    else:
+        batch = torch.zeros(batch.size())
+    torchvision.utils.save_image(batch, str(batch_idx)+"-model-ae.png")
+
 
 if __name__ == "__main__":
     # Arguements
@@ -92,15 +110,18 @@ if __name__ == "__main__":
 
 
     val_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
+            transforms.CenterCrop(384),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     test_root = os.path.join(args.data_root, 'images/test2017')
     test_annFile = os.path.join(args.annFile, 'annotations/image_info_test2017/image_info_test2017.json')   
 
-    net = torch.load("saves/ae-384.pt")
-    net.eval()
+    net = torch.load("saves/model-ae.pt").module
+    net.encoding = AEs.encoding
+    net.decoding = AEs.decoding
+
+
     criterion = nn.MSELoss()
 
     print('number of parameters:', count_parameters(net))

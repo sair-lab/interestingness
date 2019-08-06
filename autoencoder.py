@@ -203,13 +203,13 @@ class AEs(nn.Module):
         x1 = output['x1']  # size=(N, 64, x.H/2,  x.W/2)
 
         score = self.bn1(self.relu(self.deconv1(x5)))     # size=(N, 512, x.H/16, x.W/16)
-        score = score + x4                                # element-wise add, size=(N, 512, x.H/16, x.W/16)
+        # score = score + x4                                # element-wise add, size=(N, 512, x.H/16, x.W/16)
         score = self.bn2(self.relu(self.deconv2(score)))  # size=(N, 256, x.H/8, x.W/8)
-        score = score + x3                                # element-wise add, size=(N, 256, x.H/8, x.W/8)
+        # score = score + x3                                # element-wise add, size=(N, 256, x.H/8, x.W/8)
         score = self.bn3(self.relu(self.deconv3(score)))  # size=(N, 128, x.H/4, x.W/4)
-        score = score + x2                                # element-wise add, size=(N, 128, x.H/4, x.W/4)
+        # score = score + x2                                # element-wise add, size=(N, 128, x.H/4, x.W/4)
         score = self.bn4(self.relu(self.deconv4(score)))  # size=(N, 64, x.H/2, x.W/2)
-        score = score + x1                                # element-wise add, size=(N, 64, x.H/2, x.W/2)
+        # score = score + x1                                # element-wise add, size=(N, 64, x.H/2, x.W/2)
         score = self.bn5(self.relu(self.deconv5(score)))  # size=(N, 32, x.H, x.W)
         score = self.classifier(score)                    # size=(N, n_class, x.H/1, x.W/1)
 
@@ -217,6 +217,15 @@ class AEs(nn.Module):
 
     def encoding(self, x):
         return self.pretrained_net(x)['x5']
+
+    def decoding(self, x):
+        score = self.bn1(self.relu(self.deconv1(x)))     # size=(N, 512, x.H/16, x.W/16)
+        score = self.bn2(self.relu(self.deconv2(score)))  # size=(N, 256, x.H/8, x.W/8)
+        score = self.bn3(self.relu(self.deconv3(score)))  # size=(N, 128, x.H/4, x.W/4)
+        score = self.bn4(self.relu(self.deconv4(score)))  # size=(N, 64, x.H/2, x.W/2)
+        score = self.bn5(self.relu(self.deconv5(score)))  # size=(N, 32, x.H, x.W)
+        score = self.classifier(score)                    # size=(N, n_class, x.H/1, x.W/1)
+        return score  # size=(N, n_class, x.H/1, x.W/1)
 
 
 class VGGNet(VGG):

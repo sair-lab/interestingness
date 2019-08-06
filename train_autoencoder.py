@@ -41,7 +41,7 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from autoencoder import VGGNet, AEs, AE8x, AE8s, AE32s, AE16s
-
+from loss import TVLoss
 
 def train(loader, net):
     scheduler.step()
@@ -86,12 +86,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets/coco', help="dataset root folder")
     parser.add_argument("--annFile", type=str, default='/data/datasets/coco', help="learning rate")
-    parser.add_argument("--model-save", type=str, default='saves/model.pt', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/model-tv.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--gamma", type=float, default=0.1, help="learning rate multiplier")
     parser.add_argument("--milestones", type=int, default=100, help="milestones for applying multiplier")
     parser.add_argument("--epochs", type=int, default=150, help="number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=15, help="number of minibatch size")
+    parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
