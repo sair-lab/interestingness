@@ -87,8 +87,8 @@ def count_parameters(model):
 if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
-    parser.add_argument("--data-root", type=str, default='/data/datasets/coco', help="dataset root folder")
-    parser.add_argument("--annFile", type=str, default='/data/datasets/coco', help="learning rate")
+    parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
+    parser.add_argument("--annFile", type=str, default='/data/datasets', help="learning rate")
     parser.add_argument("--model-save", type=str, default='saves/coder.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-3, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1**0.5, help="ReduceLROnPlateau factor")
@@ -117,13 +117,13 @@ if __name__ == "__main__":
     #         transforms.ToTensor(),
     #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
-    # train_root = os.path.join(args.data_root, 'images/train2017')
-    # val_root = os.path.join(args.data_root, 'images/val2017')
-    # test_root = os.path.join(args.data_root, 'images/test2017')
+    # train_root = os.path.join(args.data_root, 'coco/images/train2017')
+    # val_root = os.path.join(args.data_root, 'coco/images/val2017')
+    # test_root = os.path.join(args.data_root, 'coco/images/test2017')
 
-    # train_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_train2017.json')
-    # val_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_val2017.json')
-    # test_annFile = os.path.join(args.annFile, 'annotations/image_info_test2017/image_info_test2017.json')   
+    # train_annFile = os.path.join(args.annFile, 'coco/annotations/annotations_trainval2017/captions_train2017.json')
+    # val_annFile = os.path.join(args.annFile, 'coco/annotations/annotations_trainval2017/captions_val2017.json')
+    # test_annFile = os.path.join(args.annFile, 'coco/annotations/image_info_test2017/image_info_test2017.json')
 
     # train_data = CocoDetection(root=train_root, annFile=train_annFile, transform=train_transform)
     # train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
@@ -140,10 +140,10 @@ if __name__ == "__main__":
     val_transform = transforms.Compose([
             transforms.ToTensor()])
 
-    train_data = MNIST(root=args.root, train=True, transform=train_transform, download=True)
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size=, shuffle=True)
+    train_data = MNIST(root=args.data_root, train=True, transform=train_transform, download=True)
+    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
-    val_data = MNIST(root=args.root, train=False, transform=val_transform)
+    val_data = MNIST(root=args.data_root, train=False, transform=val_transform)
     val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
     net = Interestingness(20,6,4,4)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         val_loss = performance(val_loader, net) # validate
         scheduler.step(val_loss)
 
-        with open(args.model_save+'.output','a+') as f:
+        with open(args.model_save+'.txt','a+') as f:
             f.write("epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss))
 
         if val_loss < best_loss:
@@ -176,7 +176,7 @@ if __name__ == "__main__":
 
     # test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
     # test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
-    test_data = MNIST(root='./mnist/', train=False, transform=val_transform)
+    test_data = MNIST(root=args.data_root, train=False, transform=val_transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=20, shuffle=False)
 
     test_loss = performance(test_loader, net)
