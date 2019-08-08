@@ -43,9 +43,6 @@ from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from loss import TVLoss
-from memory import Memory
-from coder import Encoder, Decoder
-from head import ReadHead, WriteHead
 from interestingness import Interest, Interestingness
 
 
@@ -58,7 +55,7 @@ def train(loader, net):
             inputs = inputs.cuda()
         optimizer.zero_grad()
         inputs = Variable(inputs)
-        outputs = net(inputs)
+        outputs = net.autoencoder(inputs)
         loss = criterion(outputs, inputs) + tvloss(outputs)
         loss.backward()
         optimizer.step()
@@ -109,36 +106,51 @@ if __name__ == "__main__":
     with open(args.model_save+'.output','a+') as f:
         f.write(str(args)+'\n')
 
+    # train_transform = transforms.Compose([
+    #         transforms.RandomResizedCrop(384),
+    #         transforms.RandomRotation(20),
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    # val_transform = transforms.Compose([
+    #         transforms.RandomResizedCrop(384),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    
+    # train_root = os.path.join(args.data_root, 'images/train2017')
+    # val_root = os.path.join(args.data_root, 'images/val2017')
+    # test_root = os.path.join(args.data_root, 'images/test2017')
+
+    # train_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_train2017.json')
+    # val_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_val2017.json')
+    # test_annFile = os.path.join(args.annFile, 'annotations/image_info_test2017/image_info_test2017.json')   
+
+    # train_data = CocoDetection(root=train_root, annFile=train_annFile, transform=train_transform)
+    # train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
+
+    # val_data = CocoDetection(root=val_root, annFile=val_annFile, transform=val_transform)
+    # val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
+
+    from torchvision.datasets import MNIST
+
     train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
             transforms.RandomRotation(20),
             transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+            transforms.ToTensor()])
     val_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    
-    train_root = os.path.join(args.data_root, 'images/train2017')
-    val_root = os.path.join(args.data_root, 'images/val2017')
-    test_root = os.path.join(args.data_root, 'images/test2017')
+            transforms.ToTensor()])
 
-    train_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_train2017.json')
-    val_annFile = os.path.join(args.annFile, 'annotations/annotations_trainval2017/captions_val2017.json')
-    test_annFile = os.path.join(args.annFile, 'annotations/image_info_test2017/image_info_test2017.json')   
+    train_data = MNIST(root=args.root, train=True, transform=train_transform, download=True)
+    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size=, shuffle=True)
 
-    train_data = CocoDetection(root=train_root, annFile=train_annFile, transform=train_transform)
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
-
-    val_data = CocoDetection(root=val_root, annFile=val_annFile, transform=val_transform)
+    val_data = MNIST(root=args.root, train=False, transform=val_transform)
     val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
-    net = Interest()
+    net = Interestingness(20,6,4,4)
+
     if torch.cuda.is_available():
         net = net.cuda()
-
-    net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
+    # net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
     tvloss = TVLoss(args.alpha)
@@ -161,8 +173,11 @@ if __name__ == "__main__":
             best_loss = val_loss
 
     net = torch.load(args.model_save)
-    test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
-    test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
+
+    # test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
+    # test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
+    test_data = MNIST(root='./mnist/', train=False, transform=val_transform)
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=20, shuffle=False)
 
     test_loss = performance(test_loader, net)
     print('val_loss: %.2f, test_loss, %.4f'%(best_loss, test_loss))

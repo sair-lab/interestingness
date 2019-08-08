@@ -14,9 +14,11 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
-from coder import Encoder, Decoder
+# from coder import Encoder, Decoder
+from coders import Encoder, Decoder
 from memory import Memory
 from head import ReadHead, WriteHead
+
 
 class Interest(nn.Module):
     def __init__(self):
@@ -39,13 +41,24 @@ class Interestingness(nn.Module):
         self.reader = ReadHead(self.memory)
         self.writer = WriteHead(self.memory)
 
-    
     def forward(self, x):
         coding = self.encoder(x)
         states = self.reader(coding)
         self.writer(coding) 
         output = self.decoder(states)
         return output
+
+    def autoencoder(self, x):
+        coding = self.encoder(x)
+        output = self.decoder(coding)
+        return output
+
+    def freezing_autoencoder(self, x):
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        for param in self.decoder.parameters():
+            param.requires_grad = False
+
 
 if __name__ == "__main__":
     x = torch.rand(15, 3, 224, 224)

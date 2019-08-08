@@ -85,7 +85,7 @@ def save_batch(batch, folder, batch_idx):
         batch = (batch - min_v) / range_v
     else:
         batch = torch.zeros(batch.size())
-    torchvision.utils.save_image(batch, os.path.join(folder, str(batch_idx)+'.png'))
+    torchvision.utils.save_image(batch, folder+str(batch_idx)+'.png')
 
 
 if __name__ == "__main__":
@@ -101,15 +101,15 @@ if __name__ == "__main__":
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    video = VideoData(root=args.data_root, file='data/car.avi', transform=transform)
+    video = VideoData(root=args.data_root, file='data/train3.avi', transform=transform)
     loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
-    images = ImageData('data/unintrests', transform=transform)
-    loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
+    # images = ImageData('data/unintrests', transform=transform)
+    # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
-        # if batch_idx%15==0:
-            # save_batch(frame, 'data/car', batch_idx)
+        if batch_idx%15==0:
+            save_batch(frame, 'data/unintrests/train3-', batch_idx)
         print(batch_idx)
 
 
