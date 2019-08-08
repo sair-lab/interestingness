@@ -43,7 +43,7 @@ from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from loss import TVLoss
-from interestingness import Interest, Interestingness
+from interestingness import AutoEncoder
 
 
 def train(loader, net):
@@ -146,11 +146,11 @@ if __name__ == "__main__":
     val_data = MNIST(root=args.data_root, train=False, transform=val_transform)
     val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
-    net = Interestingness(20,6,4,4)
+    net = AutoEncoder()
 
     if torch.cuda.is_available():
         net = net.cuda()
-    # net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
+    net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
     tvloss = TVLoss(args.alpha)

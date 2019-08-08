@@ -14,13 +14,13 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
-# from coder import Encoder, Decoder
-from coders import Encoder, Decoder
+from coder import Encoder, Decoder # for coco
+# from coders import Encoder, Decoder # for mnist
 from memory import Memory
 from head import ReadHead, WriteHead
 
 
-class Interest(nn.Module):
+class AutoEncoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = Encoder()
@@ -33,34 +33,35 @@ class Interest(nn.Module):
 
 
 class Interestingness(nn.Module):
-    def __init__(self, N, C, H, W):
+    def __init__(self, autoencoder, N, C, H, W):
         super().__init__()
-        self.encoder = Encoder()
-        self.decoder = Decoder()
+        self.ae = autoencoder
+        self._freezing_autoencoder()
         self.memory = Memory(N, C, H, W)
         self.reader = ReadHead(self.memory)
         self.writer = WriteHead(self.memory)
 
     def forward(self, x):
-        coding = self.encoder(x)
+        coding = self.ae.encoder(x)
         states = self.reader(coding)
         self.writer(coding) 
-        output = self.decoder(states)
+        output = self.ae.decoder(states)
         return output
 
-    def autoencoder(self, x):
-        coding = self.encoder(x)
-        output = self.decoder(coding)
-        return output
-
-    def freezing_autoencoder(self, x):
-        for param in self.encoder.parameters():
-            param.requires_grad = False
-        for param in self.decoder.parameters():
+    def _freezing_autoencoder(self):
+        for param in self.ae.parameters():
             param.requires_grad = False
 
 
 if __name__ == "__main__":
+    ## for mnist data
+    # x = torch.rand(15, 1, 28, 28)
+    # ae = AutoEncoder()
+    # net = Interestingness(ae, 200, 6, 4, 4)
+    # y = net(x)
+
+    ## for coco data
     x = torch.rand(15, 3, 224, 224)
-    net = Interestingness(2000, 512, 7, 7)
+    ae = AutoEncoder()
+    net = Interestingness(ae, 2000, 512, 7, 7)
     y = net(x)
