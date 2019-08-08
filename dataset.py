@@ -33,6 +33,8 @@ import argparse
 import numpy as np
 import torchvision
 from PIL import Image
+from random import sample
+from operator import itemgetter
 import torch.utils.data as Data
 from torchvision import transforms, utils
 import torchvision.transforms as transforms
@@ -63,12 +65,30 @@ class VideoData(Dataset):
 
 
 class ImageData(Dataset):
-    def __init__(self, root, transform=None):
+    def __init__(self, root, train=True, ratio=0.8, transform=None):
         self.transform = transform
         self.filename = []
         types = ('*.jpg','*.jpeg','*.png','*.ppm','*.bmp','*.pgm','*.tif','*.tiff','*.webp')
         for files in types:
             self.filename.extend(glob.glob(os.path.join(root, files)))
+
+        indexfile = os.path.join(root, 'split.pt')
+        N = len(self.filename)
+        if os.path.exists(indexfile):
+            train_index, test_index = torch.load(indexfile)
+            assert len(train_index)+len(test_index) == N, 'Data changed! Pleate delete '+indexfile 
+        else:
+            indices = range(N)
+            train_index = sample(indices, int(ratio*N))
+            test_index = np.delete(indices, train_index)
+            torch.save((train_index, test_index), indexfile)
+        
+        if train == True:
+            self.filename = itemgetter(*train_index)(self.filename)
+        else:
+            self.filename = itemgetter(*test_index)(self.filename)
+
+
 
     def __len__(self):
         return len(self.filename)
@@ -101,15 +121,15 @@ if __name__ == "__main__":
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    video = VideoData(root=args.data_root, file='data/train3.avi', transform=transform)
-    loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
+    # video = VideoData(root=args.data_root, file='data/train3.avi', transform=transform)
+    # loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
-    # images = ImageData('data/unintrests', transform=transform)
-    # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
+    images = ImageData('dronefilm/unintrests', transform=transform)
+    loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
-        if batch_idx%15==0:
-            save_batch(frame, 'data/unintrests/train3-', batch_idx)
+        # if batch_idx%15==0:
+            # save_batch(frame, 'data/unintrests/train3-', batch_idx)
         print(batch_idx)
 
 
