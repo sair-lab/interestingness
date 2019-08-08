@@ -27,6 +27,7 @@
 
 import os
 import cv2
+import glob
 import torch
 import argparse
 import numpy as np
@@ -38,7 +39,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 
 
-class Video(Dataset):
+class VideoData(Dataset):
     def __init__(self, root, file, transform=None):
         self.frames = None
         cap = cv2.VideoCapture(os.path.join(root, file))
@@ -68,6 +69,22 @@ class Video(Dataset):
         return self.frames[idx,:,:,:]
 
 
+class ImageData(Dataset):
+    def __init__(self, root, transform=None):
+        self.transform = transform
+        self.filename = []
+        types = ('*.jpg','*.jpeg','*.png','*.ppm','*.bmp','*.pgm','*.tif','*.tiff','*.webp')
+        for files in types:
+            self.filename.extend(glob.glob(os.path.join(root, files)))
+
+    def __len__(self):
+        return len(self.filename)
+
+    def __getitem__(self, idx):
+        image = Image.open(self.filename[idx])
+        return self.transform(image)
+
+
 def save_batch(batch, folder, batch_idx):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
@@ -88,14 +105,18 @@ if __name__ == "__main__":
     transform = transforms.Compose([
         # transforms.RandomResizedCrop(384),
         transforms.ToTensor(),
-        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    video = Video(root=args.data_root, file='data/car.avi', transform=transform)
+    video = VideoData(root=args.data_root, file='data/car.avi', transform=transform)
     loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
+    
+    images = ImageData('data/unintrests', transform=transform)
+    loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
-        if batch_idx%15==0:
-            save_batch(frame, 'data/car', batch_idx)
-
+        # if batch_idx%15==0:
+            # save_batch(frame, 'data/car', batch_idx)
         print(batch_idx)
+
+
