@@ -49,21 +49,14 @@ class VideoData(Dataset):
         nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.frames = torch.Tensor(nframes, 3, height, width)
         for i in range(nframes):
-            ret, frame = cap.read()
-            if ret:
-                frame = Image.fromarray(frame)
-                if transform is not None:
-                    frame = transform(frame)
-                self.frames[i,:,:,:] = frame
-            else:
-                print("Video finished.")
-                break
+            _, frame = cap.read()
+            frame = Image.fromarray(frame)
+            if transform is not None:
+                frame = transform(frame)
+            self.frames[i,:,:,:] = frame
 
     def __len__(self):
-        if self.frames is not None:
-            return self.frames.size(0)
-        else:
-            return 0
+        return self.frames.size(0)
 
     def __getitem__(self, idx):
         return self.frames[idx,:,:,:]
