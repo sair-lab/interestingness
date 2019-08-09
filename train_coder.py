@@ -1,4 +1,4 @@
-# Copyright <2019> <Chen Wang <https://chenwang.site>, Carnegie Mellon University>
+# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
 
 # Redistribution and use in source and binary forms, with or without modification, are 
 # permitted provided that the following conditions are met:
@@ -81,7 +81,6 @@ def performance(loader, net):
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
 
 
 if __name__ == "__main__":

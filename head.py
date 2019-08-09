@@ -1,4 +1,4 @@
-# Copyright <2019> <Chen Wang <https://chenwang.site>, Carnegie Mellon University>
+# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
 
 # Redistribution and use in source and binary forms, with or without modification, are 
 # permitted provided that the following conditions are met:
@@ -32,19 +32,14 @@ import torch.nn.functional as F
 
 
 class HeadBase(nn.Module):
-
     def __init__(self, memory):
         super(HeadBase, self).__init__()
         self.memory = memory
         _,self.C,self.H,self.W = memory.size()
         self.embeddings_size = self.C*self.H*self.W
 
-    def is_read_head(self):
-        return NotImplementedError
-
     def _address_memory(self, key, strength, sharpen):
         # Handle Activations
-        key = key.clone()
         strength = F.softplus(strength)
         sharpen = 1 + F.softplus(sharpen)
         return self.memory.address(key, strength, sharpen)
@@ -65,9 +60,6 @@ class ReadHead(HeadBase):
         nn.init.xavier_uniform_(self.sharpen.weight, gain=1.4)
         nn.init.normal_(self.sharpen.bias, std=0.01)
 
-    def is_read_head(self):
-        return True
-
     def forward(self, embeddings):
         embeddings = self.transform(embeddings)
         coding = embeddings.view(embeddings.size(0),-1)
@@ -85,14 +77,10 @@ class WriteHead(HeadBase):
         self.reset_parameters()
 
     def reset_parameters(self):
-        # Initialize the linear layers
         nn.init.xavier_uniform_(self.strength.weight, gain=1.4)
         nn.init.normal_(self.strength.bias, std=0.01)
         nn.init.xavier_uniform_(self.sharpen.weight, gain=1.4)
         nn.init.normal_(self.sharpen.bias, std=0.01)
-
-    def is_read_head(self):
-        return False
 
     def forward(self, embeddings):
         embeddings = self.transform(embeddings)

@@ -1,4 +1,4 @@
-# Copyright <2019> <Chen Wang <https://chenwang.site>, Carnegie Mellon University>
+# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
 
 # Redistribution and use in source and binary forms, with or without modification, are 
 # permitted provided that the following conditions are met:
@@ -42,15 +42,14 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from autoencoder import AEs
 from dataset import ImageData
 from interestingness import AutoEncoder, Interestingness
 
-def train(loader, net):
 
+def train(loader, net):
     train_loss, batches = 0, len(loader)
     enumerater = tqdm.tqdm(enumerate(loader))
-    for batch_idx, inputs in enumerater:
+    for batch_idx, (inputs,_) in enumerater:
         if torch.cuda.is_available():
             inputs = inputs.cuda()
         optimizer.zero_grad()
@@ -68,7 +67,7 @@ def train(loader, net):
 def performance(loader, net):
     test_loss = 0
     with torch.no_grad():
-        for batch_idx, inputs in enumerate(loader):
+        for batch_idx, (inputs,_) in enumerate(loader):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
@@ -81,7 +80,6 @@ def performance(loader, net):
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
 
 
 if __name__ == "__main__":
@@ -133,7 +131,8 @@ if __name__ == "__main__":
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
-        train_loss = train(train_loader, net)
+        # train_loss = train(train_loader, net)
+        train_loss = 0
         val_loss = performance(test_loader, net) # validate
         scheduler.step(val_loss)
 

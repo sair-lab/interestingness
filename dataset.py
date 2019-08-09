@@ -1,4 +1,4 @@
-# Copyright <2019> <Chen Wang <https://chenwang.site>, Carnegie Mellon University>
+# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
 
 # Redistribution and use in source and binary forms, with or without modification, are 
 # permitted provided that the following conditions are met:
@@ -61,7 +61,7 @@ class VideoData(Dataset):
         return self.frames.size(0)
 
     def __getitem__(self, idx):
-        return self.frames[idx,:,:,:]
+        return self.frames[idx,:,:,:], torch.tensor([])
 
 
 class ImageData(Dataset):
@@ -88,14 +88,12 @@ class ImageData(Dataset):
         else:
             self.filename = itemgetter(*test_index)(self.filename)
 
-
-
     def __len__(self):
         return len(self.filename)
 
     def __getitem__(self, idx):
         image = Image.open(self.filename[idx])
-        return self.transform(image)
+        return self.transform(image), torch.tensor([])
 
 
 def save_batch(batch, folder, batch_idx):

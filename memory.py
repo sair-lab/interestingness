@@ -1,4 +1,4 @@
-# Copyright <2019> <Chen Wang <https://chenwang.site>, Carnegie Mellon University>
+# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
 
 # Redistribution and use in source and binary forms, with or without modification, are 
 # permitted provided that the following conditions are met:
@@ -42,7 +42,7 @@ class Memory(nn.Module):
         """
         super(Memory, self).__init__()
         self.N, self.C, self.H, self.W = N, C, H, W
-        self.register_buffer('memory', torch.Tensor(N, C, H, W))
+        self.register_buffer('memory', torch.zeros(N, C, H, W))
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -59,6 +59,7 @@ class Memory(nn.Module):
     def write(self, w, add):
         experience = torch.sum(w.view(w.size(0),self.N,1,1,1) * add.unsqueeze(1), dim=0)
         self.memory.data += experience.data
+        self.memory.data /= (self.memory.sum(dim=[1,2,3],keepdim=True)+1e-7)
 
     def address(self, key, strength, sharpen):
         """
