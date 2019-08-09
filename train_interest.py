@@ -88,7 +88,7 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets/dronefilm/train', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/model-ae.pt', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/autocoder.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
@@ -121,26 +121,27 @@ if __name__ == "__main__":
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     autoencoder = torch.load(args.model_save).module
-    autoencoder.encoder = AEs.encoding
-    autoencoder.decoder = AEs.decoding
-    net = Interestingness(autoencoder, 2000, 512, 12, 12)
+    net = Interestingness(autoencoder, 200, 512, 12, 12)
 
     if torch.cuda.is_available():
         net = net.cuda()
-    
+
     criterion = nn.MSELoss()
-    optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
+    optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
         train_loss = train(train_loader, net)
-        val_loss = performance(val_loader, net) # validate
+        val_loss = performance(test_loader, net) # validate
         scheduler.step(val_loss)
 
         with open(args.model_save+'.interest.txt','a+') as f:
-            f.write("epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss))
+            infomation = "epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss)
+            f.write(infomation)
+            print(infomation, end='')
+
 
         if val_loss < best_loss:
             print("New best Model, saving...")

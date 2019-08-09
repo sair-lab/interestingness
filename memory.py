@@ -35,7 +35,7 @@ class Memory(nn.Module):
     """Memory bank for NTM."""
     def __init__(self, N=2000, C=512, H=7, W=7):
         """Initialize the Memory matrix.
-        N: Number of Cubes in the memory.
+        N: Number of cubes in the memory.
         C: Channel of cubes in the memory
         H: Height of cubes in the memory
         W: Number of cubes in the memory
@@ -50,7 +50,7 @@ class Memory(nn.Module):
         nn.init.uniform_(self.memory, -stdev, stdev)
 
     def size(self):
-        return (self.N, self.C, self.H, self.W)
+        return self.memory.size()
 
     def read(self, w):
         w = w.view(w.size(0), self.N, 1, 1, 1)
@@ -58,7 +58,7 @@ class Memory(nn.Module):
 
     def write(self, w, add):
         experience = torch.sum(w.view(w.size(0),self.N,1,1,1) * add.unsqueeze(1), dim=0)
-        self.memory = self.memory + experience
+        self.memory.data += experience.data
 
     def address(self, key, strength, sharpen):
         """

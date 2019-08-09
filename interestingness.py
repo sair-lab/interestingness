@@ -36,21 +36,27 @@ class Interestingness(nn.Module):
     def __init__(self, autoencoder, N, C, H, W):
         super().__init__()
         self.ae = autoencoder
-        self._freezing_autoencoder()
         self.memory = Memory(N, C, H, W)
         self.reader = ReadHead(self.memory)
         self.writer = WriteHead(self.memory)
+        self.set_parameters()
 
     def forward(self, x):
-        coding = self.ae.encoder(self.ae, x)
+        coding = self.ae.encoder(x)
         states = self.reader(coding)
-        self.writer(coding) 
-        output = self.ae.decoder(self.ae, states)
+        self.writer(coding)
+        output = self.ae.decoder(states)
         return output
 
-    def _freezing_autoencoder(self):
+    def set_parameters(self):
         for param in self.ae.parameters():
             param.requires_grad = False
+        for param in self.memory.parameters():
+            param.requires_grad = False
+        for param in self.reader.parameters():
+            param.requires_grad = True
+        for param in self.writer.parameters():
+            param.requires_grad = True
 
 
 if __name__ == "__main__":
