@@ -42,10 +42,10 @@ class Interestingness(nn.Module):
         self.writer = WriteHead(self.memory)
 
     def forward(self, x):
-        coding = self.ae.encoder(x)
+        coding = self.ae.encoder(self.ae, x)
         states = self.reader(coding)
         self.writer(coding) 
-        output = self.ae.decoder(states)
+        output = self.ae.decoder(self.ae, states)
         return output
 
     def _freezing_autoencoder(self):
