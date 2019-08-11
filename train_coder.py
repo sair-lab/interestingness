@@ -89,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--annFile", type=str, default='/data/datasets', help="learning rate")
     parser.add_argument("--model-save", type=str, default='saves/coder.pt', help="learning rate")
+    parser.add_argument('--resume', dest='resume', action='store_true')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
@@ -145,11 +146,16 @@ if __name__ == "__main__":
     # val_data = MNIST(root=args.data_root, train=False, transform=val_transform)
     # val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
-    net = AutoEncoder()
+    if args.resume == True:
+        net, best_loss = torch.load(args.model_save)
+        print("Resume train from {} with loss {}".format(args.model_save, best_loss))
+    else:
+        net = AutoEncoder()
+        best_loss = float('Inf')
 
     if torch.cuda.is_available():
-        net = net.cuda()
-    net = nn.DataParallel(net, device_ids=list(range(torch.cuda.device_count())))
+        print("Runnin on {} GPU".format(list(range(torch.cuda.device_count()))))
+        net = nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
     tvloss = TVLoss(args.alpha)
@@ -157,7 +163,6 @@ if __name__ == "__main__":
     scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
-    best_loss = float('Inf')
     for epoch in range(args.epochs):
         train_loss = train(train_loader, net)
         val_loss = performance(val_loader, net) # validate
@@ -168,10 +173,13 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save)
+            torch.save((net.module, val_loss), args.model_save)
             best_loss = val_loss
 
-    net = torch.load(args.model_save)
+    print("Testing")
+    net, _ = torch.load(args.model_save)
+    if torch.cuda.is_available():
+        net = nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
 
     test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
