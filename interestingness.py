@@ -72,7 +72,7 @@ class Interestingness(nn.Module):
         coding = self.ae.encoder(x)
         states = self.reader(coding)
         self.writer(coding)
-        output = self.ae.decoder(coding)
+        output = self.ae.decoder(states)
         return output
 
     def set_parameters(self):

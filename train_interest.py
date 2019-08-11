@@ -131,8 +131,7 @@ if __name__ == "__main__":
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
-        # train_loss = train(train_loader, net)
-        train_loss = 0
+        train_loss = train(train_loader, net)
         val_loss = performance(test_loader, net) # validate
         scheduler.step(val_loss)
 
