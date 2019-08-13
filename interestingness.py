@@ -96,5 +96,5 @@ if __name__ == "__main__":
     ## for coco data
     x = torch.rand(15, 3, 224, 224)
     ae = AutoEncoder()
-    net = Interestingness(ae, 2000, 512, 7, 7)
+    net = Interestingness(ae, 200, 512, 7, 7)
     y = net(x)

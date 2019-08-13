@@ -38,69 +38,43 @@ class HeadBase(nn.Module):
         _,self.C,self.H,self.W = memory.size()
         self.embeddings_size = self.C*self.H*self.W
 
-    def _address_memory(self, key, strength, sharpen):
-        # Handle Activations
-        strength = F.softplus(strength)
-        sharpen = 1 + F.softplus(sharpen)
-        return self.memory.address(key, strength, sharpen)
-
 
 class ReadHead(HeadBase):
     def __init__(self, memory):
         super(ReadHead, self).__init__(memory)
-        self.strength = nn.Linear(self.embeddings_size, 1)
-        self.sharpen = nn.Linear(self.embeddings_size, 1)
         self.transform = nn.Conv2d(in_channels=self.C, out_channels=self.C, kernel_size=1, groups=self.C)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        # Initialize the linear layers
-        nn.init.xavier_uniform_(self.strength.weight, gain=1.4)
-        nn.init.normal_(self.strength.bias, std=0.01)
-        nn.init.xavier_uniform_(self.sharpen.weight, gain=1.4)
-        nn.init.normal_(self.sharpen.bias, std=0.01)
 
     def forward(self, embeddings):
         embeddings = self.transform(embeddings)
-        coding = embeddings.view(embeddings.size(0),-1)
-        strength, sharpen = self.strength(coding), self.sharpen(coding)
-        w = self._address_memory(embeddings, strength, sharpen)
-        return self.memory.read(w)
+        return self.memory.read(embeddings)
 
 
 class WriteHead(HeadBase):
     def __init__(self, memory):
         super(WriteHead, self).__init__(memory)
-        self.strength = nn.Linear(self.embeddings_size, 1)
-        self.sharpen = nn.Linear(self.embeddings_size, 1)
         self.transform = nn.Conv2d(in_channels=self.C, out_channels=self.C, kernel_size=1, groups=self.C)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        nn.init.xavier_uniform_(self.strength.weight, gain=1.4)
-        nn.init.normal_(self.strength.bias, std=0.01)
-        nn.init.xavier_uniform_(self.sharpen.weight, gain=1.4)
-        nn.init.normal_(self.sharpen.bias, std=0.01)
 
     def forward(self, embeddings):
         embeddings = self.transform(embeddings)
-        coding = embeddings.view(embeddings.size(0),-1)
-        strength, sharpen = self.strength(coding), self.sharpen(coding)
-        w = self._address_memory(embeddings, strength, sharpen)
-        self.memory.write(w, embeddings)
+        self.memory.write(embeddings)
 
 
 if __name__ == "__main__":
     from memory import Memory
-    N, C, H, W = 2000, 2, 2, 2
-    B = 2
+    import torchvision
+    from torch.utils.tensorboard import SummaryWriter
+    logger =  SummaryWriter('runs/head')
+    N, B, C, H, W = 5, 1, 3, 2, 2
+
     memory = Memory(N, C, H, W)
-    coding = torch.rand(B, C, H, W)
-    batch  = nn.BatchNorm2d(C)
-    coding = batch(coding)
     writer = WriteHead(memory)
     reader = ReadHead(memory)
 
-    for i in range(10):
+    coding = torch.rand(B, C, H, W)
+    logger.add_images('coding', coding)
+    logger.add_images('memory', memory.memory/memory.memory.max())
+
+    for i in range(100):
         writer(coding)
         x = reader(coding)
+        logger.add_images('memory', memory.memory/memory.memory.max())

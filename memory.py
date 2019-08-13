@@ -71,7 +71,6 @@ class Memory(nn.Module):
     def _normalize_memory(self):
         self.memory.data /= self.memory.sum(dim=[1,2,3], keepdim=True) + 1e-7
 
-
     def _normalize(self, key):
         return key/(key.sum(dim=[1,2,3],keepdim=True) + 1e-7)
 
