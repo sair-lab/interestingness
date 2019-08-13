@@ -33,70 +33,76 @@ import torch.nn.functional as F
 
 class Memory(nn.Module):
     """Memory bank for NTM."""
+    pi_2 = 3.14159/2
     def __init__(self, N=2000, C=512, H=7, W=7):
         """Initialize the Memory matrix.
         N: Number of cubes in the memory.
-        C: Channel of cubes in the memory
-        H: Height of cubes in the memory
-        W: Number of cubes in the memory
+        C: Channel of each cube in the memory
+        H: Height of each cube in the memory
+        W: Width of each cube in the memory
         """
         super(Memory, self).__init__()
         self.N, self.C, self.H, self.W = N, C, H, W
         self.register_buffer('memory', torch.zeros(N, C, H, W))
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        stdev = 1 / (np.sqrt(self.N*self.C*self.H*self. W))
-        nn.init.uniform_(self.memory, -stdev, stdev)
+        nn.init.uniform_(self.memory)
+        self._normalize_memory()
 
     def size(self):
         return self.memory.size()
 
-    def read(self, w):
-        w = w.view(w.size(0), self.N, 1, 1, 1)
-        return torch.sum(w*self.memory,dim=1)
+    def read(self, key):
+        w = self._address(key)
+        return torch.sum(w * self.memory, dim=1)
 
-    def write(self, w, add):
-        experience = torch.sum(w.view(w.size(0),self.N,1,1,1) * add.unsqueeze(1), dim=0)
-        self.memory.data += experience.data
-        self.memory.data /= (self.memory.sum(dim=[1,2,3],keepdim=True)+1e-7)
+    def write(self, key):
+        w = self._address(key)
+        memory = ((1 - w) * self.memory.data).sum(dim=0)
+        knowledge = (w * key.unsqueeze(1)).sum(dim=0)
+        self.memory.data = memory + knowledge
+        self._normalize_memory()
 
-    def address(self, key, strength, sharpen):
-        """
-        Returns a softmax weighting over the memory cubes.
-
-        key: The key vector.
-        strength: The key strength (focus).
-        sharpen: Sharpen weighting scalar.
-        """
-        # Content focus
-        w = self._similarity(key, strength)
-        w = self._sharpen(w, sharpen)
-        return w
-
-    def _similarity(self, key, strength):
+    def _address(self, key):
+        key = self._normalize(key)
         key = key.view(key.size(0), 1, -1)
         memory = self.memory.view(self.N, -1)
-        w = F.softmax(strength * F.cosine_similarity(memory, key, dim=-1), dim=1)
-        return w
+        w = F.softmax((F.cosine_similarity(memory, key, dim=-1)*self.pi_2).tan(), dim=1)
+        return w.view(-1, self.N, 1, 1, 1)
 
-    def _sharpen(self, w, sharpen):
-        w = w ** sharpen
-        w = torch.div(w, torch.sum(w, dim=1).view(-1, 1) + 1e-16)
-        return w
+    def _normalize_memory(self):
+        self.memory.data /= self.memory.sum(dim=[1,2,3], keepdim=True) + 1e-7
+
+
+    def _normalize(self, key):
+        return key/(key.sum(dim=[1,2,3],keepdim=True) + 1e-7)
 
 
 if __name__ == "__main__":
-    N, C, H, W = 2000, 512, 7, 7
-    B = 2
-    mem = Memory(N, C, H, W)
-    key = torch.FloatTensor(B, C, H, W)
-    t = torch.FloatTensor([0.3]*B).view(B,1)
-    s = torch.FloatTensor([0.7]*B).view(B,1)
+    from torch.utils.tensorboard import SummaryWriter
+    logger =  SummaryWriter('runs/test3')
 
-    w = mem.address(key, t, s)
-    x = mem.read(w)
-    # e = torch.FloatTensor(B, C, H, W)
-    a = torch.FloatTensor(B, C, H, W)
-    mem.write(w, a)
-    print(x.size())
+    N, B, C, H, W = 5, 5, 1, 3, 3
+    mem = Memory(N, C, H, W)
+
+    key = torch.rand(B, C, H, W)
+    key /= (key.sum(dim=[1,2,3],keepdim=True)+1e-7)
+
+    say = torch.rand(B, C, H, W)
+    say /= (say.sum(dim=[1,2,3],keepdim=True)+1e-7)
+
+    logger.add_images('key1', key/key.max())
+    logger.add_images('say1', say/say.max())
+
+    for i in range(10):
+        mem.write(key)
+
+    rkey = mem.read(key) 
+    logger.add_images('key2', rkey/rkey.max())
+
+    for i in range(3):
+        mem.write(say)
+    
+    rkey = mem.read(key)
+    rsay = mem.read(say)
+
+    logger.add_images('key3', rkey/rkey.max())
+    logger.add_images('say2', rsay/rsay.max())
