@@ -73,7 +73,6 @@ class Memory(nn.Module):
 
     def _normalize(self, x):
         return x
-        # return x/(((x**2).sum(dim=[1,2,3],keepdim=True)).sqrt()+ 1e-7)
 
 
 if __name__ == "__main__":
@@ -81,7 +80,7 @@ if __name__ == "__main__":
     import time
     logger =  SummaryWriter('runs/memory'+str(time.time()))
 
-    N, B, C, H, W = 2, 1, 1, 3, 3
+    N, B, C, H, W = 1, 1, 1, 3, 20
     mem = Memory(N, C, H, W)
 
     def criterion(a, b):
@@ -98,10 +97,12 @@ if __name__ == "__main__":
         loss1 = criterion(k1, r1)
         loss2 = criterion(k2, r2)
         logger.add_scalars('Loss', {'k1': loss1, 'k2': loss2}, i)
+        logger.add_images('k1r', r1, i)
+        logger.add_images('k2r', r2, i)
         logger.add_images('memory', mem.memory.data, i)
 
-    k1 = _normalize(torch.randn(B, C, H, W))
-    k2 = _normalize(torch.randn(B, C, H, W))
+    k1 = _normalize(torch.rand(B, C, H, W))
+    k2 = _normalize(torch.rand(B, C, H, W))
 
     logger.add_images('k1', k1/k1.max())
     logger.add_images('k2', k2/k2.max())
@@ -109,24 +110,14 @@ if __name__ == "__main__":
     for i in range(5):
         add_loss(i)
         mem.write(k1)
-        r1 = mem.read(k1)
-        logger.add_images('k1r', r1/r1.max(), i)
 
     for i in range(5, 18):
         add_loss(i)
         mem.write(k2)
-        r2 = mem.read(k2)
-        logger.add_images('k2r', r2/r2.max(), i)
 
     for i in range(18, 25):
         add_loss(i)
         mem.write(k1)
-        r2 = mem.read(k2)
-        logger.add_images('k2r', r2/r2.max(), i)
 
     f1 = mem.read(k1)
     f2 = mem.read(k2)
-
-    logger.add_images('k1f', f1/f2.max())
-    logger.add_images('k2f', f1/f2.max())
-    logger.add_images('mem', mem.memory.data)
