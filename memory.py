@@ -32,10 +32,9 @@ import torch.nn.functional as F
 
 
 class Memory(nn.Module):
-    """Memory bank for NTM."""
     pi_2 = 3.14159/2
     def __init__(self, N=2000, C=512, H=7, W=7):
-        """Initialize the Memory matrix.
+        """Initialize the Memory Tensors.
         N: Number of cubes in the memory.
         C: Channel of each cube in the memory
         H: Height of each cube in the memory
@@ -44,64 +43,90 @@ class Memory(nn.Module):
         super(Memory, self).__init__()
         self.N, self.C, self.H, self.W = N, C, H, W
         self.register_buffer('memory', torch.zeros(N, C, H, W))
-        nn.init.uniform_(self.memory)
+        nn.init.kaiming_uniform_(self.memory)
         self._normalize_memory()
 
     def size(self):
         return self.memory.size()
 
     def read(self, key):
+        key = self._normalize(key)
         w = self._address(key)
         return torch.sum(w * self.memory, dim=1)
 
     def write(self, key):
+        key = self._normalize(key)
         w = self._address(key)
-        memory = ((1 - w) * self.memory.data).sum(dim=0)
-        knowledge = (w * key.unsqueeze(1)).sum(dim=0)
+        memory = ((1 - w) * self.memory.data).mean(dim=0)
+        knowledge = (w * key.unsqueeze(1)).mean(dim=0)
         self.memory.data = memory + knowledge
         self._normalize_memory()
 
     def _address(self, key):
-        key = self._normalize(key)
         key = key.view(key.size(0), 1, -1)
         memory = self.memory.view(self.N, -1)
         w = F.softmax((F.cosine_similarity(memory, key, dim=-1)*self.pi_2).tan(), dim=1)
         return w.view(-1, self.N, 1, 1, 1)
 
     def _normalize_memory(self):
-        self.memory.data /= self.memory.sum(dim=[1,2,3], keepdim=True) + 1e-7
+        self.memory.data = self._normalize(self.memory.data)
 
-    def _normalize(self, key):
-        return key/(key.sum(dim=[1,2,3],keepdim=True) + 1e-7)
+    def _normalize(self, x):
+        return x
+        # return x/(((x**2).sum(dim=[1,2,3],keepdim=True)).sqrt()+ 1e-7)
 
 
 if __name__ == "__main__":
     from torch.utils.tensorboard import SummaryWriter
-    logger =  SummaryWriter('runs/test3')
+    import time
+    logger =  SummaryWriter('runs/memory'+str(time.time()))
 
-    N, B, C, H, W = 5, 5, 1, 3, 3
+    N, B, C, H, W = 2, 1, 1, 3, 3
     mem = Memory(N, C, H, W)
 
-    key = torch.rand(B, C, H, W)
-    key /= (key.sum(dim=[1,2,3],keepdim=True)+1e-7)
+    def criterion(a, b):
+        a = a.view(-1)
+        b = b.view(-1)
+        return F.cosine_similarity(a, b, dim = 0)
 
-    say = torch.rand(B, C, H, W)
-    say /= (say.sum(dim=[1,2,3],keepdim=True)+1e-7)
+    def _normalize(x):
+        return x
 
-    logger.add_images('key1', key/key.max())
-    logger.add_images('say1', say/say.max())
+    def add_loss(i):
+        r1 = mem.read(k1)
+        r2 = mem.read(k2)
+        loss1 = criterion(k1, r1)
+        loss2 = criterion(k2, r2)
+        logger.add_scalars('Loss', {'k1': loss1, 'k2': loss2}, i)
+        logger.add_images('memory', mem.memory.data, i)
 
-    for i in range(10):
-        mem.write(key)
+    k1 = _normalize(torch.randn(B, C, H, W))
+    k2 = _normalize(torch.randn(B, C, H, W))
 
-    rkey = mem.read(key) 
-    logger.add_images('key2', rkey/rkey.max())
+    logger.add_images('k1', k1/k1.max())
+    logger.add_images('k2', k2/k2.max())
 
-    for i in range(3):
-        mem.write(say)
-    
-    rkey = mem.read(key)
-    rsay = mem.read(say)
+    for i in range(5):
+        add_loss(i)
+        mem.write(k1)
+        r1 = mem.read(k1)
+        logger.add_images('k1r', r1/r1.max(), i)
 
-    logger.add_images('key3', rkey/rkey.max())
-    logger.add_images('say2', rsay/rsay.max())
+    for i in range(5, 18):
+        add_loss(i)
+        mem.write(k2)
+        r2 = mem.read(k2)
+        logger.add_images('k2r', r2/r2.max(), i)
+
+    for i in range(18, 25):
+        add_loss(i)
+        mem.write(k1)
+        r2 = mem.read(k2)
+        logger.add_images('k2r', r2/r2.max(), i)
+
+    f1 = mem.read(k1)
+    f2 = mem.read(k2)
+
+    logger.add_images('k1f', f1/f2.max())
+    logger.add_images('k2f', f1/f2.max())
+    logger.add_images('mem', mem.memory.data)
