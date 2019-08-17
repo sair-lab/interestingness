@@ -45,7 +45,7 @@ class ReadHead(HeadBase):
         self.transform = nn.Conv2d(in_channels=self.C, out_channels=self.C, kernel_size=1, groups=self.C)
 
     def forward(self, embeddings):
-        embeddings = self.transform(embeddings)
+        # embeddings = self.transform(embeddings)
         return self.memory.read(embeddings)
 
 
@@ -55,7 +55,7 @@ class WriteHead(HeadBase):
         self.transform = nn.Conv2d(in_channels=self.C, out_channels=self.C, kernel_size=1, groups=self.C)
 
     def forward(self, embeddings):
-        embeddings = self.transform(embeddings)
+        # embeddings = self.transform(embeddings)
         self.memory.write(embeddings)
 
 

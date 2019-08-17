@@ -103,11 +103,12 @@ class Dronefilm(Dataset):
         self.transform, self.train = transform, train
 
         if train is True:
-            self.filenames = sorted(glob.glob(os.path.join(root, data, 'train/*.png')))
+            self.filenames = sorted(glob.glob(os.path.join(root, 'dronefilm', data, 'train/*.png')))
             self.nframes = len(self.filenames)
         else:
-            filenames = sorted(glob.glob(os.path.join(root, data, 'test/*.avi')))
+            filenames = sorted(glob.glob(os.path.join(root, 'dronefilm', data, 'test/*.avi')))
             cap = cv2.VideoCapture(filenames[test_id])
+            print("Using test sequences:", filenames[test_id])
             self.nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             self.frames = []
             for _ in range(self.nframes):
@@ -123,8 +124,8 @@ class Dronefilm(Dataset):
             frame = Image.open(self.filenames[idx])
         else:
             frame = self.frames[idx]
-        if transform is not None:
-            frame = transform(frame)
+        if self.transform is not None:
+            frame = self.transform(frame)
         return frame
 
 
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     # images = Mavscout('/data/datasets', transform=transform)
     # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
 
-    # data = Dronefilm(root="/data/datasets/dronefilm", data='car', test_id=0, train=False, transform=transform)
+    # data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
     # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):

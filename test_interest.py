@@ -27,19 +27,23 @@
 
 import os
 import copy
+import time
 import tqdm
 import torch
 import os.path
 import argparse
+import torchvision
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
 import torch.utils.data as Data
 from torch.autograd import Variable
+from matplotlib import pyplot as plt
 from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
+from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from vae import VAE
@@ -47,36 +51,43 @@ from dataset import ImageData, Dronefilm
 from interestingness import AutoEncoder, Interestingness
 
 
-def train(loader, net):
-    train_loss, batches = 0, len(loader)
-    enumerater = tqdm.tqdm(enumerate(loader))
-    for batch_idx, inputs in enumerater:
-        if torch.cuda.is_available():
-            inputs = inputs.cuda()
-        optimizer.zero_grad()
-        inputs = Variable(inputs)
-        outputs = net(inputs)
-        loss = criterion(outputs, inputs)
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-        enumerater.set_description("train loss: %.4f on %d/%d"%(train_loss/(batch_idx+1), batch_idx, batches))
-
-    return train_loss/(batch_idx+1)
-
-
 def performance(loader, net):
     test_loss = 0
     with torch.no_grad():
         for batch_idx, inputs in enumerate(loader):
+            if batch_idx % 10 !=0:
+                continue
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
-            outputs = net(inputs)
+            outputs= net(inputs)
             loss = criterion(outputs, inputs)
             test_loss += loss.item()
+            show_batch(inputs,loss.item())
+            print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
+
+
+def show_batch(batch, loss):
+    min_v = torch.min(batch)
+    range_v = torch.max(batch) - min_v
+    if range_v > 0:
+        batch = (batch - min_v) / range_v
+    else:
+        batch = torch.zeros(batch.size())
+    grid = torchvision.utils.make_grid(batch)
+    grid = grid.cpu()
+    plt.subplot(121)
+    plt.imshow(grid.numpy()[::-1].transpose((1, 2, 0)))
+    plt.title(str(loss))
+    plt.subplot(122)
+    plt.bar(0, loss, width=0.1)
+    plt.plot([-1,1], [0.9, 0.9])
+    plt.ylim(0.7,1)
+    plt.draw()
+    plt.pause(.3)
+    plt.clf()
 
 
 def count_parameters(model):
@@ -87,12 +98,12 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/autoencoder.pt', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/autoencoder.pt.interest', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
     parser.add_argument("--patience", type=int, default=5, help="patience of epochs for ReduceLROnPlateau")
-    parser.add_argument("--epochs", type=int, default=1000, help="number of training epochs")
+    parser.add_argument("--epochs", type=int, default=150, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
@@ -103,45 +114,22 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     with open(args.model_save+'.interest.txt','a+') as f:
         f.write(str(args)+'\n')
+    logger =  SummaryWriter('runs/interest-'+str(time.time()))
 
-    train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
-            transforms.RandomRotation(20),
-            transforms.RandomHorizontalFlip(),
+    val_transform = transforms.Compose([
+            transforms.CenterCrop(384),
             transforms.ToTensor()])
-
-    train_data = Dronefilm(root=args.data_root, train=True, data='car', transform=train_transform)
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=1, shuffle=True)
 
     test_data = Dronefilm(root=args.data_root, train=False,  data='car', test_id=0, transform=val_transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
     net = torch.load(args.model_save)
-    net = Interestingness(net, 2000, 512, 12, 12)
 
     if torch.cuda.is_available():
         net = net.cuda()
 
     criterion = nn.MSELoss()
-    optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
-    scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
-    best_loss = float('Inf')
-    for epoch in range(args.epochs):
-        # train_loss = train(train_loader, net)
-        val_loss = performance(train_loader, net) # validate
-        scheduler.step(val_loss)
-        print(val_loss)
 
-        # with open(args.model_save+'.interest.txt','a+') as f:
-        #     infomation = "epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss)
-        #     f.write(infomation)
-        #     print(infomation, end='')
-
-        if val_loss < best_loss:
-            print("New best Model, saving...")
-            torch.save(net, args.model_save+'.interest')
-            best_loss = val_loss
-
-    print('test_loss, %.4f'%(best_loss))
+    val_loss = performance(test_loader, net)
