@@ -28,6 +28,7 @@
 import os
 import cv2
 import glob
+import glob2
 import torch
 import argparse
 import numpy as np
@@ -36,6 +37,7 @@ from PIL import Image
 from random import sample
 from operator import itemgetter
 import torch.utils.data as Data
+from matplotlib import pyplot as plt
 from torchvision import transforms, utils
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
@@ -61,7 +63,7 @@ class VideoData(Dataset):
         return self.frames.size(0)
 
     def __getitem__(self, idx):
-        return self.frames[idx,:,:,:], torch.tensor([])
+        return self.frames[idx,:,:,:]
 
 
 class ImageData(Dataset):
@@ -96,14 +98,55 @@ class ImageData(Dataset):
         return self.transform(image), torch.tensor([])
 
 
+class Dronefilm(Dataset):
+    def __init__(self, root, data='car', test_id=0, train=True, transform=None):
+        self.transform, self.train = transform, train
+
+        if train is True:
+            self.filenames = sorted(glob.glob(os.path.join(root, data, 'train/*.png')))
+            self.nframes = len(self.filenames)
+        else:
+            filenames = sorted(glob.glob(os.path.join(root, data, 'test/*.avi')))
+            cap = cv2.VideoCapture(filenames[test_id])
+            self.nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.frames = []
+            for _ in range(self.nframes):
+                _, frame = cap.read()
+                frame = Image.fromarray(frame)
+                self.frames.append(frame)
+
+    def __len__(self):
+        return self.nframes
+
+    def __getitem__(self, idx):
+        if self.train is True:
+            frame = Image.open(self.filenames[idx])
+        else:
+            frame = self.frames[idx]
+        if transform is not None:
+            frame = transform(frame)
+        return frame
+
+
 def save_batch(batch, folder, batch_idx):
+    # min_v = torch.min(batch)
+    # range_v = torch.max(batch) - min_v
+    # if range_v > 0:
+    #     batch = (batch - min_v) / range_v
+    # else:
+    #     batch = torch.zeros(batch.size())
+    torchvision.utils.save_image(batch, folder+"%04d"%batch_idx+'.png')
+
+def show_batch(batch):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
         batch = (batch - min_v) / range_v
     else:
         batch = torch.zeros(batch.size())
-    torchvision.utils.save_image(batch, folder+str(batch_idx)+'.png')
+    grid = torchvision.utils.make_grid(batch)
+    plt.imshow(grid.numpy()[::-1].transpose((1, 2, 0)))
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -119,15 +162,22 @@ if __name__ == "__main__":
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    # video = VideoData(root=args.data_root, file='data/train3.avi', transform=transform)
-    # loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
+    video = VideoData(root='/data/datasets/dronefilm/bike/train', file='train-1.avi', transform=transform)
+    loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
-    images = ImageData('dronefilm/unintrests', transform=transform)
-    loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
+    # images = ImageData('dronefilm/unintrests', transform=transform)
+    # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
+
+    # images = Mavscout('/data/datasets', transform=transform)
+    # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
+
+    # data = Dronefilm(root="/data/datasets/dronefilm", data='car', test_id=0, train=False, transform=transform)
+    # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
+        show_batch(frame)
         # if batch_idx%15==0:
-            # save_batch(frame, 'data/unintrests/train3-', batch_idx)
+            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
         print(batch_idx)
 
 
