@@ -41,13 +41,12 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
-from coder import Encoder, Decoder # for coco
-# from coders import Encoder, Decoder # for mnist
+from coder import Encoder, Decoder, VEncoder
 from memory import Memory
 from head import ReadHead, WriteHead
 
 
-class AutoEncoder(nn.Module):
+class AE(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = Encoder()
@@ -57,6 +56,24 @@ class AutoEncoder(nn.Module):
         coding = self.encoder(x)
         output = self.decoder(coding)
         return output
+
+
+class VAE(AE):
+    def __init__(self):
+        super().__init__()
+        self.encoder = VEncoder()
+
+    def forward(self, x):
+        self.coding = self.encoder(x)
+        logvar = self.encoder.logvar
+        coding = self.reparameterize(self.coding, logvar)
+        output = self.decoder(coding)
+        return output
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = torch.randn_like(std)
+        return mu + eps*std
 
 
 class Interestingness(nn.Module):
@@ -79,22 +96,18 @@ class Interestingness(nn.Module):
         for param in self.ae.parameters():
             param.requires_grad = False
         for param in self.memory.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
         for param in self.reader.parameters():
             param.requires_grad = True
         for param in self.writer.parameters():
             param.requires_grad = True
 
+AutoEncoder = AE
 
 if __name__ == "__main__":
-    ## for mnist data
-    # x = torch.rand(15, 1, 28, 28)
-    # ae = AutoEncoder()
-    # net = Interestingness(ae, 200, 6, 4, 4)
-    # y = net(x)
-
     ## for coco data
     x = torch.rand(15, 3, 224, 224)
-    ae = AutoEncoder()
+    # ae = AE()
+    ae = VAE()
     net = Interestingness(ae, 200, 512, 7, 7)
     y = net(x)

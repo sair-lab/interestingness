@@ -46,9 +46,8 @@ from torchvision.datasets import CocoDetection
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from vae import VAE
 from dataset import ImageData, Dronefilm
-from interestingness import AutoEncoder, Interestingness
+from interestingness import AE, VAE, AutoEncoder, Interestingness
 
 
 def performance(loader, net):
@@ -63,13 +62,13 @@ def performance(loader, net):
             outputs= net(inputs)
             loss = criterion(outputs, inputs)
             test_loss += loss.item()
-            show_batch(inputs,loss.item())
+            show_batch(inputs, batch_idx, loss.item())
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
 
 
-def show_batch(batch, loss):
+def show_batch(batch, batch_idx, loss):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
@@ -80,13 +79,15 @@ def show_batch(batch, loss):
     grid = grid.cpu()
     plt.subplot(121)
     plt.imshow(grid.numpy()[::-1].transpose((1, 2, 0)))
-    plt.title(str(loss))
+    plt.title(str(batch_idx))
     plt.subplot(122)
     plt.bar(0, loss, width=0.1)
-    plt.plot([-1,1], [0.9, 0.9])
+    plt.plot([-0.05,0.05], [0.9, 0.9], 'r')
+    plt.axis('equal')
+    plt.xlim(-0.05, 0.05)
     plt.ylim(0.7,1)
     plt.draw()
-    plt.pause(.3)
+    plt.pause(.1)
     plt.clf()
 
 

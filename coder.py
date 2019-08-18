@@ -69,6 +69,30 @@ class Encoder(VGG):
         return output['x5']
 
 
+class VEncoder(Encoder):
+    def __init__(self):
+        super().__init__()
+        self.LogVar = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+
+    def forward(self, x):
+        output = {}
+        # get the output of each maxpooling layer (5 maxpool in VGG net)
+        for idx in range(len(self.ranges)):
+            for layer in range(self.ranges[idx][0], self.ranges[idx][1]):
+                x = self.features[layer](x)
+            output["x%d"%(idx+1)] = x
+        self.logvar = self.LogVar(output['x4'])
+        return output['x5']
+
+
 class Decoder(nn.Module):
     def __init__(self):
         super().__init__()

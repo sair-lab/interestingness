@@ -37,17 +37,16 @@ import torch.optim as optim
 from torchvision import models
 import torch.utils.data as Data
 from torch.autograd import Variable
+from torch.nn import functional as F
 from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from loss import TVLoss
-from interestingness import AutoEncoder
+from interestingness import AE, VAE
 
 
 def train(loader, net):
-
     train_loss, batches = 0, len(loader)
     enumerater = tqdm.tqdm(enumerate(loader))
     for batch_idx, (inputs, _) in enumerater:
@@ -56,13 +55,22 @@ def train(loader, net):
         optimizer.zero_grad()
         inputs = Variable(inputs)
         outputs = net(inputs)
-        loss = criterion(outputs, inputs) + tvloss(outputs)
+        if hasattr(net.module, 'reparameterize'):
+            loss = vae_loss(outputs, inputs,  net.module.coding,  net.module.encoder.logvar)
+        else:
+            loss = criterion(outputs, inputs)
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
         enumerater.set_description("train loss: %.4f on %d/%d"%(train_loss/(batch_idx+1), batch_idx, batches))
 
     return train_loss/(batch_idx+1)
+
+
+def vae_loss(y, x, mu, logvar):
+    BCE = criterion(y, x)
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return BCE + KLD
 
 
 def performance(loader, net):
@@ -73,7 +81,10 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs = net(inputs)
-            loss = criterion(outputs, inputs)
+            if hasattr(net.module, 'reparameterize'):
+                loss = vae_loss(outputs, inputs,  net.module.coding,  net.module.encoder.logvar)
+            else:
+                loss = criterion(outputs, inputs)
             test_loss += loss.item()
 
     return test_loss/(batch_idx+1)
@@ -86,6 +97,7 @@ def count_parameters(model):
 if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Train AutoEncoder')
+    parser.add_argument("--net", type=str, default='AE', help="AE or VAE")
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--annFile", type=str, default='/data/datasets', help="learning rate")
     parser.add_argument("--model-save", type=str, default='saves/coder.pt', help="learning rate")
@@ -95,7 +107,7 @@ if __name__ == "__main__":
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
     parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
     parser.add_argument("--epochs", type=int, default=150, help="number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=60, help="number of minibatch size")
+    parser.add_argument("--batch-size", type=int, default=15, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
     parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
@@ -131,26 +143,11 @@ if __name__ == "__main__":
     val_data = CocoDetection(root=val_root, annFile=val_annFile, transform=val_transform)
     val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
 
-    # from torchvision.datasets import MNIST
-
-    # train_transform = transforms.Compose([
-    #         transforms.RandomRotation(20),
-    #         transforms.RandomHorizontalFlip(),
-    #         transforms.ToTensor()])
-    # val_transform = transforms.Compose([
-    #         transforms.ToTensor()])
-
-    # train_data = MNIST(root=args.data_root, train=True, transform=train_transform, download=True)
-    # train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
-
-    # val_data = MNIST(root=args.data_root, train=False, transform=val_transform)
-    # val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
-
     if args.resume == True:
         net, best_loss = torch.load(args.model_save)
         print("Resume train from {} with loss {}".format(args.model_save, best_loss))
     else:
-        net = AutoEncoder()
+        exec('net='+args.net+'()') # construct net
         best_loss = float('Inf')
 
     if torch.cuda.is_available():
@@ -158,7 +155,6 @@ if __name__ == "__main__":
         net = nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
 
     criterion = nn.MSELoss()
-    tvloss = TVLoss(args.alpha)
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
@@ -183,8 +179,5 @@ if __name__ == "__main__":
 
     test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
-    # test_data = MNIST(root=args.data_root, train=False, transform=val_transform)
-    # test_loader = Data.DataLoader(dataset=test_data, batch_size=20, shuffle=False)
-
     test_loss = performance(test_loader, net)
     print('val_loss: %.2f, test_loss, %.4f'%(best_loss, test_loss))
