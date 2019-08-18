@@ -54,23 +54,13 @@ def train(loader, net):
             inputs = inputs.cuda()
         optimizer.zero_grad()
         inputs = Variable(inputs)
-        outputs = net(inputs)
-        if hasattr(net.module, 'reparameterize'):
-            loss = vae_loss(outputs, inputs,  net.module.coding,  net.module.encoder.logvar)
-        else:
-            loss = criterion(outputs, inputs)
+        loss = net(inputs)
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
         enumerater.set_description("train loss: %.4f on %d/%d"%(train_loss/(batch_idx+1), batch_idx, batches))
 
     return train_loss/(batch_idx+1)
-
-
-def vae_loss(y, x, mu, logvar):
-    BCE = criterion(y, x)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + KLD
 
 
 def performance(loader, net):
@@ -80,11 +70,7 @@ def performance(loader, net):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
-            outputs = net(inputs)
-            if hasattr(net.module, 'reparameterize'):
-                loss = vae_loss(outputs, inputs,  net.module.coding,  net.module.encoder.logvar)
-            else:
-                loss = criterion(outputs, inputs)
+            loss = net(inputs)
             test_loss += loss.item()
 
     return test_loss/(batch_idx+1)
@@ -154,7 +140,6 @@ if __name__ == "__main__":
         print("Runnin on {} GPU".format(list(range(torch.cuda.device_count()))))
         net = nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
 
-    criterion = nn.MSELoss()
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 

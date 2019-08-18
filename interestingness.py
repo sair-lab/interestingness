@@ -41,7 +41,7 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
-from coder import Encoder, Decoder, VEncoder
+from coder import Encoder, Decoder, LogVar
 from memory import Memory
 from head import ReadHead, WriteHead
 
@@ -51,29 +51,34 @@ class AE(nn.Module):
         super().__init__()
         self.encoder = Encoder()
         self.decoder = Decoder()
+        self.criterion = nn.MSELoss()
 
     def forward(self, x):
         coding = self.encoder(x)
         output = self.decoder(coding)
-        return output
+        return self.criterion(x, output)
 
 
 class VAE(AE):
     def __init__(self):
         super().__init__()
-        self.encoder = VEncoder()
+        self.logvar = LogVar()
 
     def forward(self, x):
-        self.coding = self.encoder(x)
-        logvar = self.encoder.logvar
-        coding = self.reparameterize(self.coding, logvar)
+        coding = self.encoder(x)
+        logvar = self.logvar(coding)
+        kld = self.KLD(coding, logvar)
+        coding = self.reparameterize(coding, logvar)
         output = self.decoder(coding)
-        return output
+        return  self.criterion(x, output) + kld
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)
         return mu + eps*std
+
+    def KLD(self, mu, logvar):
+        return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
 
 class Interestingness(nn.Module):
