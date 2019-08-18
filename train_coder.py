@@ -54,7 +54,7 @@ def train(loader, net):
             inputs = inputs.cuda()
         optimizer.zero_grad()
         inputs = Variable(inputs)
-        loss = net(inputs)
+        loss = net(inputs).sum()
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
@@ -69,7 +69,7 @@ def performance(loader, net):
         for batch_idx, (inputs, _) in enumerate(loader):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
-            inputs = Variable(inputs)
+            inputs = Variable(inputs).sum()
             loss = net(inputs)
             test_loss += loss.item()
 
