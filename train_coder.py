@@ -69,8 +69,8 @@ def performance(loader, net):
         for batch_idx, (inputs, _) in enumerate(loader):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
-            inputs = Variable(inputs).sum()
-            loss = net(inputs)
+            inputs = Variable(inputs)
+            loss = net(inputs).sum()
             test_loss += loss.item()
 
     return test_loss/(batch_idx+1)
