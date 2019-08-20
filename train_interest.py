@@ -42,9 +42,8 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from vae import VAE
 from dataset import ImageData, Dronefilm
-from interestingness import AutoEncoder, Interestingness
+from interestingness import AE, VAE, Interestingness
 
 
 def train(loader, net):
@@ -87,7 +86,7 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/autoencoder.pt', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
@@ -110,6 +109,10 @@ if __name__ == "__main__":
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor()])
 
+    val_transform = transforms.Compose([
+            transforms.RandomResizedCrop(384),
+            transforms.ToTensor()])
+
     train_data = Dronefilm(root=args.data_root, train=True, data='car', transform=train_transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=1, shuffle=True)
 
@@ -129,8 +132,7 @@ if __name__ == "__main__":
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
-        # train_loss = train(train_loader, net)
-        val_loss = performance(train_loader, net) # validate
+        val_loss = performance(train_loader, net)
         scheduler.step(val_loss)
         print(val_loss)
 
