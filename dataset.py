@@ -130,13 +130,8 @@ class Dronefilm(Dataset):
 
 
 def save_batch(batch, folder, batch_idx):
-    # min_v = torch.min(batch)
-    # range_v = torch.max(batch) - min_v
-    # if range_v > 0:
-    #     batch = (batch - min_v) / range_v
-    # else:
-    #     batch = torch.zeros(batch.size())
     torchvision.utils.save_image(batch, folder+"%04d"%batch_idx+'.png')
+
 
 def show_batch(batch):
     min_v = torch.min(batch)

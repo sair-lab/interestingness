@@ -41,9 +41,9 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
-from coder import Encoder, Decoder, LogVar
 from memory import Memory
 from head import ReadHead, WriteHead
+from coder import Encoder, Decoder, LogVar
 
 
 class AE(nn.Module):
@@ -63,6 +63,7 @@ class VAE(AE):
     def __init__(self):
         super().__init__()
         self.logvar = LogVar()
+        self.criterion = nn.MSELoss(reduction='sum')
 
     def forward(self, x):
         coding = self.encoder(x)
@@ -70,7 +71,8 @@ class VAE(AE):
         kld = self.KLD(coding, logvar)
         coding = self.reparameterize(coding, logvar)
         output = self.decoder(coding)
-        return  self.criterion(x, output) + kld
+        mse = self.criterion(x, output)
+        return  mse + kld
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5*logvar)
