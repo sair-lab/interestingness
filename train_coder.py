@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--net", type=str, default='AE', help="AE or VAE")
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--annFile", type=str, default='/data/datasets', help="learning rate")
-    parser.add_argument("--model-save", type=str, default='saves/coder.pt', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
     parser.add_argument('--resume', dest='resume', action='store_true')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
