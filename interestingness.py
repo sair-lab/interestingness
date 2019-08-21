@@ -42,7 +42,6 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
 from memory import Memory
-from head import ReadHead, WriteHead
 from coder import Encoder, Decoder, LogVar
 
 
@@ -88,14 +87,12 @@ class Interestingness(nn.Module):
         super().__init__()
         self.ae = autoencoder
         self.memory = Memory(N, C, H, W)
-        self.reader = ReadHead(self.memory)
-        self.writer = WriteHead(self.memory)
         self.set_parameters()
 
     def forward(self, x):
         coding = self.ae.encoder(x)
-        states = self.reader(coding)
-        self.writer(coding)
+        states = self.memory.read(coding)
+        self.memory.write(coding)
         output = self.ae.decoder(states)
         return output
 
@@ -104,10 +101,7 @@ class Interestingness(nn.Module):
             param.requires_grad = False
         for param in self.memory.parameters():
             param.requires_grad = True
-        for param in self.reader.parameters():
-            param.requires_grad = True
-        for param in self.writer.parameters():
-            param.requires_grad = True
+
 
 AutoEncoder = AE
 

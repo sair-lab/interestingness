@@ -87,20 +87,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
+    parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
-    parser.add_argument("--patience", type=int, default=5, help="patience of epochs for ReduceLROnPlateau")
+    parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
     parser.add_argument("--epochs", type=int, default=1000, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
-    parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
+    parser.add_argument("--w-decay", type=float, default=1e-2, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
-    with open(args.model_save+'.interest.txt','a+') as f:
+    with open(args.model_save +'.interest.txt.'+args.data,'a+') as f:
         f.write(str(args)+'\n')
 
     train_transform = transforms.Compose([
@@ -113,10 +114,10 @@ if __name__ == "__main__":
             transforms.RandomResizedCrop(384),
             transforms.ToTensor()])
 
-    train_data = Dronefilm(root=args.data_root, train=True, data='car', transform=train_transform)
+    train_data = Dronefilm(root=args.data_root, train=True, data=args.data, transform=train_transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=1, shuffle=True)
 
-    test_data = Dronefilm(root=args.data_root, train=False,  data='car', test_id=0, transform=val_transform)
+    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=val_transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
     net = torch.load(args.model_save)
@@ -126,24 +127,25 @@ if __name__ == "__main__":
         net = net.cuda()
 
     criterion = nn.MSELoss()
-    optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
-    scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
+    # optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
+    # scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
+        # val_loss = train(train_loader, net)
         val_loss = performance(train_loader, net)
-        scheduler.step(val_loss)
+        # scheduler.step(val_loss)
         print(val_loss)
 
-        # with open(args.model_save+'.interest.txt','a+') as f:
+        # with open(args.model_save+'.interest-test.txt','a+') as f:
         #     infomation = "epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss)
         #     f.write(infomation)
         #     print(infomation, end='')
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.interest')
+            torch.save(net, args.model_save+'.interest.'+ args.data)
             best_loss = val_loss
 
     print('test_loss, %.4f'%(best_loss))

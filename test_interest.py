@@ -99,7 +99,8 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.interest', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.car.interest', help="learning rate")
+    parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
@@ -113,15 +114,12 @@ if __name__ == "__main__":
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
-    with open(args.model_save+'.interest.txt','a+') as f:
-        f.write(str(args)+'\n')
-    logger =  SummaryWriter('runs/interest-'+str(time.time()))
 
     val_transform = transforms.Compose([
             transforms.CenterCrop(384),
             transforms.ToTensor()])
 
-    test_data = Dronefilm(root=args.data_root, train=False,  data='car', test_id=0, transform=val_transform)
+    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=val_transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
     net = torch.load(args.model_save)
