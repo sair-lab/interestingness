@@ -44,6 +44,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
 from interestingness import AE, VAE, Interestingness
+from torchutil import EarlyStopScheduler, count_parameters, show_batch
 
 
 def train(loader, net):
@@ -70,16 +71,13 @@ def performance(loader, net):
         for batch_idx, inputs in enumerate(loader):
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
-            inputs = Variable(inputs)
+            inputs = Variable(inputs).view(-1,inputs.size(-3),inputs.size(-2),inputs.size(-1))
             outputs = net(inputs)
             loss = criterion(outputs, inputs)
             test_loss += loss.item()
+            show_batch(torch.cat([inputs,outputs], dim=0))
 
     return test_loss/(batch_idx+1)
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 if __name__ == "__main__":
@@ -90,8 +88,8 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
-    parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
-    parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
+    parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
+    parser.add_argument("--patience", type=int, default=5, help="patience of epochs for ReduceLROnPlateau")
     parser.add_argument("--epochs", type=int, default=1000, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
@@ -101,51 +99,43 @@ if __name__ == "__main__":
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
-    with open(args.model_save +'.interest.txt.'+args.data,'a+') as f:
-        f.write(str(args)+'\n')
 
-    train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
-            transforms.RandomRotation(20),
+    transform = transforms.Compose([
+            # transforms.RandomRotation(20),
+            transforms.CenterCrop(384),
             transforms.RandomHorizontalFlip(),
-            transforms.ToTensor()])
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
 
-    val_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
-            transforms.ToTensor()])
-
-    train_data = Dronefilm(root=args.data_root, train=True, data=args.data, transform=train_transform)
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=1, shuffle=True)
-
-    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=val_transform)
-    test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
+    train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
+    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     net = torch.load(args.model_save)
     net = Interestingness(net, 2000, 512, 12, 12)
+    net.set_train(True)
 
     if torch.cuda.is_available():
         net = net.cuda()
 
     criterion = nn.MSELoss()
-    # optimizer = optim.RMSprop(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
-    # scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
+    optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
+    scheduler = EarlyStopScheduler(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
-        # val_loss = train(train_loader, net)
         val_loss = performance(train_loader, net)
-        # scheduler.step(val_loss)
-        print(val_loss)
-
-        # with open(args.model_save+'.interest-test.txt','a+') as f:
-        #     infomation = "epoch: %d, train_loss: %.4f, val_loss: %.4f\n" % (epoch, train_loss, val_loss)
-        #     f.write(infomation)
-        #     print(infomation, end='')
+        print('loss:', val_loss)
 
         if val_loss < best_loss:
             print("New best Model, saving...")
             torch.save(net, args.model_save+'.interest.'+ args.data)
             best_loss = val_loss
+            no_decrease = 0
+                
+        if scheduler.step(val_loss, epoch):
+            print("Early Stopping!")
+            break
 
     print('test_loss, %.4f'%(best_loss))

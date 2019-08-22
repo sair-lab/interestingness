@@ -88,11 +88,16 @@ class Interestingness(nn.Module):
         self.ae = autoencoder
         self.memory = Memory(N, C, H, W)
         self.set_parameters()
+        self.set_train(False)
 
     def forward(self, x):
         coding = self.ae.encoder(x)
-        states = self.memory.read(coding)
-        self.memory.write(coding)
+        if self.train:
+            self.memory.write(coding)
+            states = self.memory.read(coding)
+        else:
+            states = self.memory.read(coding)
+            self.memory.write(coding)
         output = self.ae.decoder(states)
         return output
 
@@ -101,6 +106,9 @@ class Interestingness(nn.Module):
             param.requires_grad = False
         for param in self.memory.parameters():
             param.requires_grad = True
+
+    def set_train(self, train=True):
+        self.train = train
 
 
 AutoEncoder = AE

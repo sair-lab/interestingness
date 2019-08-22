@@ -42,9 +42,11 @@ from torchvision import transforms, utils
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 
+from torchutil import show_batch
 
 class VideoData(Dataset):
     def __init__(self, root, file, transform=None):
+        super().__init__()
         self.transform = transform
         self.cap = cv2.VideoCapture(os.path.join(root, file))
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -68,6 +70,7 @@ class VideoData(Dataset):
 
 class ImageData(Dataset):
     def __init__(self, root, train=True, ratio=0.8, transform=None):
+        super().__init__()
         self.transform = transform
         self.filename = []
         types = ('*.jpg','*.jpeg','*.png','*.ppm','*.bmp','*.pgm','*.tif','*.tiff','*.webp')
@@ -94,12 +97,13 @@ class ImageData(Dataset):
         return len(self.filename)
 
     def __getitem__(self, idx):
-        image = Image.open(self.filename[idx])
+        image = Image.open(self.filename[idx], "RGB")
         return self.transform(image)
 
 
 class Dronefilm(Dataset):
     def __init__(self, root, data='car', test_id=0, train=True, transform=None):
+        super().__init__()
         self.transform, self.train = transform, train
 
         if train is True:
@@ -133,19 +137,6 @@ def save_batch(batch, folder, batch_idx):
     torchvision.utils.save_image(batch, folder+"%04d"%batch_idx+'.png')
 
 
-def show_batch(batch, name="video"):
-    min_v = torch.min(batch)
-    range_v = torch.max(batch) - min_v
-    if range_v > 0:
-        batch = (batch - min_v) / range_v
-    else:
-        batch = torch.zeros(batch.size())
-    grid = torchvision.utils.make_grid(batch)
-    img = grid.numpy()[::-1].transpose((1, 2, 0))
-    cv2.imshow(name, img)
-    cv2.waitKey(1)
-
-
 if __name__ == "__main__":
     from torch.autograd import Variable
 
@@ -154,14 +145,14 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
 
     transform = transforms.Compose([
-        transforms.Resize(384),
+        # transforms.Resize(384),
         # transforms.CenterCrop(384),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    video = VideoData(root='/data/datasets/subte', file='movie.mpg', transform=transform)
-    loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
+    # video = VideoData(root='/data/datasets/dronefilm/bike/train', file='train-1.avi', transform=transform)
+    # loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
     # images = ImageData('dronefilm/unintrests', transform=transform)
     # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
@@ -169,15 +160,17 @@ if __name__ == "__main__":
     # images = Mavscout('/data/datasets', transform=transform)
     # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
 
-    # data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
-    # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
+    data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
+    loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
         if batch_idx%15==0:
             # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
             show_batch(frame)
         # if batch_idx%15==0:
-            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
+            # cv2.imwrite('/data/datasets/dronefilm/car/train/t3-'+"%04d"%batch_idx+'.png', frame)
+            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t2-', batch_idx)
+            # show_batch(frame)
             print(batch_idx)
 
 

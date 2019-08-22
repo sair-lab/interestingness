@@ -46,6 +46,7 @@ from torchvision.datasets import CocoDetection
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+from torchutil import count_parameters
 from dataset import ImageData, Dronefilm
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 
@@ -58,9 +59,9 @@ def performance(loader, net):
                 continue
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
-            inputs = Variable(inputs)
+            inputs = Variable(inputs).view(-1,inputs.size(-3),inputs.size(-2),inputs.size(-1))
             outputs= net(inputs)
-            loss = criterion(outputs, inputs)
+            loss = max([criterion(outputs[i], inputs[i]) for i in range(inputs.size(0))])
             test_loss += loss.item()
             show_batch(inputs, batch_idx, loss.item())
             print('loss:', loss.item())
@@ -82,47 +83,47 @@ def show_batch(batch, batch_idx, loss):
     plt.title(str(batch_idx))
     plt.subplot(122)
     plt.bar(0, loss, width=0.1)
-    plt.plot([-0.05,0.05], [0.9, 0.9], 'r')
+    plt.plot([-0.05,0.05], [1, 1], 'r')
     plt.axis('equal')
     plt.xlim(-0.05, 0.05)
-    plt.ylim(0.7,1)
+    plt.ylim(0, 2)
     plt.draw()
     plt.pause(.1)
     plt.clf()
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.car.interest', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.interest.car', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
-    parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
-    parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
-    parser.add_argument("--min-lr", type=float, default=1e-5, help="minimum lr for ReduceLROnPlateau")
-    parser.add_argument("--patience", type=int, default=5, help="patience of epochs for ReduceLROnPlateau")
-    parser.add_argument("--epochs", type=int, default=150, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
-    parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
-    parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
-    parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
-    val_transform = transforms.Compose([
+    transform = transforms.Compose([
             transforms.CenterCrop(384),
-            transforms.ToTensor()])
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
 
-    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=val_transform)
-    test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
+    # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # transform = transforms.Compose([
+    #         transforms.RandomHorizontalFlip(),
+    #         transforms.RandomResizedCrop((384, 640)),
+    #         transforms.FiveCrop(384),
+    #         transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
+    #         transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
+    #         ])
+
+    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     net = torch.load(args.model_save)
+    net.set_train(False)
 
     if torch.cuda.is_available():
         net = net.cuda()
