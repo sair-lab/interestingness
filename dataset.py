@@ -45,25 +45,25 @@ from torch.utils.data import Dataset, DataLoader
 
 class VideoData(Dataset):
     def __init__(self, root, file, transform=None):
-        self.frames = None
-        cap = cv2.VideoCapture(os.path.join(root, file))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps =  int(cap.get(cv2.CAP_PROP_FPS))
-        nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.frames = torch.Tensor(nframes, 3, height, width)
-        for i in range(nframes):
-            _, frame = cap.read()
-            frame = Image.fromarray(frame)
-            if transform is not None:
-                frame = transform(frame)
-            self.frames[i,:,:,:] = frame
+        self.transform = transform
+        self.cap = cv2.VideoCapture(os.path.join(root, file))
+        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.fps =  int(self.cap.get(cv2.CAP_PROP_FPS))
+        self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def size(self):
+        return (self.nframes, 3, self.height, self.width)
 
     def __len__(self):
-        return self.frames.size(0)
+        return self.nframes
 
     def __getitem__(self, idx):
-        return self.frames[idx,:,:,:]
+        _, frame = self.cap.read()
+        frame = Image.fromarray(frame)
+        if self.transform is not None:
+            frame = self.transform(frame)
+        return frame
 
 
 class ImageData(Dataset):
@@ -133,7 +133,7 @@ def save_batch(batch, folder, batch_idx):
     torchvision.utils.save_image(batch, folder+"%04d"%batch_idx+'.png')
 
 
-def show_batch(batch):
+def show_batch(batch, name="video"):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
@@ -141,8 +141,9 @@ def show_batch(batch):
     else:
         batch = torch.zeros(batch.size())
     grid = torchvision.utils.make_grid(batch)
-    plt.imshow(grid.numpy()[::-1].transpose((1, 2, 0)))
-    plt.show()
+    img = grid.numpy()[::-1].transpose((1, 2, 0))
+    cv2.imshow(name, img)
+    cv2.waitKey(1)
 
 
 if __name__ == "__main__":
@@ -153,12 +154,13 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
 
     transform = transforms.Compose([
-        transforms.RandomResizedCrop(384),
+        transforms.Resize(384),
+        # transforms.CenterCrop(384),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    video = VideoData(root='/data/datasets/dronefilm/bike/train', file='train-1.avi', transform=transform)
+    video = VideoData(root='/data/datasets/subte', file='movie.mpg', transform=transform)
     loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
     # images = ImageData('dronefilm/unintrests', transform=transform)
@@ -171,9 +173,11 @@ if __name__ == "__main__":
     # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
-        show_batch(frame)
+        if batch_idx%15==0:
+            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
+            show_batch(frame)
         # if batch_idx%15==0:
             # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
-        print(batch_idx)
+            print(batch_idx)
 
 
