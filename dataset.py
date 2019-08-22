@@ -95,7 +95,7 @@ class ImageData(Dataset):
 
     def __getitem__(self, idx):
         image = Image.open(self.filename[idx])
-        return self.transform(image), torch.tensor([])
+        return self.transform(image)
 
 
 class Dronefilm(Dataset):
