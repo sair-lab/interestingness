@@ -26,6 +26,7 @@
 # DAMAGE.
 
 import os
+import cv2
 import copy
 import time
 import tqdm
@@ -39,6 +40,7 @@ import torch.optim as optim
 from torchvision import models
 import torch.utils.data as Data
 from torch.autograd import Variable
+from torch.nn import functional as F
 from matplotlib import pyplot as plt
 from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
@@ -63,35 +65,39 @@ def performance(loader, net):
             outputs= net(inputs)
             loss = max([criterion(outputs[i], inputs[i]) for i in range(inputs.size(0))])
             test_loss += loss.item()
-            show_batch_loss(inputs, batch_idx, loss.item())
-            show_batch(inputs-outputs, 'head-map')
+            show_batch_box(inputs, batch_idx, loss.item())
+            # show_batch(F.softmax(inputs-outputs), 'heat map')
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
 
 
-def show_batch_loss(batch, batch_idx, loss):
+def boxbar(height, bar, ranges=[0, 2], threshold=[1.0, 1.5]):
+    width = 15
+    box = np.zeros((height,width,3), np.uint8)
+    x1, y1 = 0, int((1.0-bar/(ranges[1]-ranges[0]))*height)
+    x2, y2 = int(width), int(height)
+    cv2.rectangle(box,(x1,y1),(x2,y2),(0,255,0),-1)
+    for i in threshold:
+        x1, y1 = 0, int((1.0-i/ranges[1])*height)
+        x2, y2 = width, int((1.0-i/ranges[1])*height)
+        cv2.line(box,(x1, y1), (x2, y2), (255,0,0), 3)
+    return box
+
+
+def show_batch_box(batch, batch_idx, loss):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
         batch = (batch - min_v) / range_v
     else:
         batch = torch.zeros(batch.size())
-    grid = torchvision.utils.make_grid(batch)
-    grid = grid.cpu()
-    plt.subplot(121)
-    plt.imshow(grid.numpy()[::-1].transpose((1, 2, 0)))
-    plt.title(str(batch_idx))
-    plt.subplot(122)
-    plt.bar(0, loss, width=0.1)
-    plt.plot([-0.05,0.05], [1.5, 1.5], 'r')
-    plt.plot([-0.05,0.05], [1, 1], 'r')
-    plt.axis('equal')
-    plt.xlim(-0.05, 0.05)
-    plt.ylim(0, 2)
-    plt.draw()
-    plt.pause(.1)
-    plt.clf()
+    grid = torchvision.utils.make_grid(batch).cpu()
+    img = grid.numpy()[::-1].transpose((1, 2, 0))
+    box = boxbar(grid.size(-2), loss)
+    frame = np.hstack([img, box])
+    cv2.imshow('interestingness', frame)
+    cv2.waitKey(30)
 
 
 if __name__ == "__main__":
