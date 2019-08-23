@@ -27,7 +27,52 @@
 
 import cv2
 import torch
+import random
+import numbers
 import torchvision
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+
+
+class RandomMotionBlur(object):
+    def __init__(self, p=[0.7, 0.2, 0.1]):
+        self.p = p
+        kernel_size = 3
+        self.w3 = torch.zeros(4, kernel_size, kernel_size)
+        self.w3[0,kernel_size//2,:] = 1.0/kernel_size
+        self.w3[1,:,kernel_size//2] = 1.0/kernel_size
+        self.w3[2] = torch.eye(kernel_size)
+        self.w3[3] = torch.eye(kernel_size).rot90()
+        kernel_size = 5
+        self.w5 = torch.zeros(4, kernel_size, kernel_size)
+        self.w5[0,kernel_size//2,:] = 1.0/kernel_size
+        self.w5[1,:,kernel_size//2] = 1.0/kernel_size
+        self.w5[2] = torch.eye(kernel_size)
+        self.w5[3] = torch.eye(kernel_size).rot90()
+
+
+    def __call__(self, img):
+        """
+        Args:
+            tensor (Image): Image to be cropped.
+
+        Returns:
+            tensor: Random motion blured image.
+        """
+        p = random.random()
+        if p <= self.p[0]:
+            return img
+        if self.p[0] < p <= self.p[0]+ self.p[1]:
+            w = self.w3[torch.randint(0,4,(1,))].unsqueeze(0)
+            kernel_size = 3
+        elif 1-self.p[2] < p:
+            w = self.w5[torch.randint(0,4,(1,))].unsqueeze(0)
+            kernel_size = 5
+
+        return F.conv2d(img.unsqueeze(1), w, padding=kernel_size//2).squeeze(1)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(p={})'.format(self.p)
 
 
 class EarlyStopScheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
@@ -88,3 +133,6 @@ def show_batch(batch, name='video'):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     cv2.imshow(name, img)
     cv2.waitKey(1)
+
+if __name__ == "__main__":
+    motionblur = RandomMotionBlur()

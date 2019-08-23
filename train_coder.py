@@ -44,7 +44,7 @@ from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from interestingness import AE, VAE
-
+from torchutil import RandomMotionBlur, EarlyStopScheduler
 
 def train(loader, net):
     train_loss, batches = 0, len(loader)
@@ -105,14 +105,16 @@ if __name__ == "__main__":
         f.write(str(args)+'\n')
 
     train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
             transforms.RandomRotation(20),
+            transforms.RandomResizedCrop(384),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
+            RandomMotionBlur(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     val_transform = transforms.Compose([
             transforms.RandomResizedCrop(384),
             transforms.ToTensor(),
+            RandomMotionBlur(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
     train_root = os.path.join(args.data_root, 'coco/images/train2017')
@@ -141,13 +143,12 @@ if __name__ == "__main__":
         net = nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
 
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
-    scheduler = ReduceLROnPlateau(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
+    scheduler = EarlyStopScheduler(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
     for epoch in range(args.epochs):
         train_loss = train(train_loader, net)
         val_loss = performance(val_loader, net) # validate
-        scheduler.step(val_loss)
 
         with open(args.model_save+'.txt','a+') as f:
             f.write("epoch: %d, train_loss: %.4f, val_loss: %.4f, lr: %f\n" % (epoch, train_loss, val_loss, optimizer.param_groups[0]['lr']))
@@ -156,6 +157,10 @@ if __name__ == "__main__":
             print("New best Model, saving...")
             torch.save((net.module, val_loss), args.model_save)
             best_loss = val_loss
+
+        if scheduler.step(val_loss, epoch):
+            print('Early Stopping!')
+            break
 
     print("Testing")
     net, _ = torch.load(args.model_save)

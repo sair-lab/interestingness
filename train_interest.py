@@ -44,7 +44,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
 from interestingness import AE, VAE, Interestingness
-from torchutil import EarlyStopScheduler, count_parameters, show_batch
+from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur
+
 
 
 def train(loader, net):
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
-    parser.add_argument("--patience", type=int, default=5, help="patience of epochs for ReduceLROnPlateau")
+    parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
     parser.add_argument("--epochs", type=int, default=1000, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
-    net = torch.load(args.model_save)
+    net,_ = torch.load(args.model_save)
     net = Interestingness(net, 2000, 512, 12, 12)
     net.set_train(True)
 
