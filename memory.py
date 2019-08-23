@@ -45,7 +45,6 @@ class Memory(nn.Module):
         self.register_buffer('memory', torch.zeros(N, C, H, W))
         nn.init.kaiming_uniform_(self.memory)
         self._normalize_memory()
-        # self.strength = nn.Linear(C*H*W, 1)
 
     def size(self):
         return self.memory.size()
@@ -67,7 +66,6 @@ class Memory(nn.Module):
         key = key.view(key.size(0), 1, -1)
         memory = self.memory.view(self.N, -1)
         w = F.softmax((F.cosine_similarity(memory, key, dim=-1)*self.pi_2).tan(), dim=1)
-        # w = F.softmax(F.cosine_similarity(memory, key, dim=-1)*self.strength(key.view(key.size(0),-1)), dim=1)
         return w.view(-1, self.N, 1, 1, 1)
 
     def _normalize_memory(self):

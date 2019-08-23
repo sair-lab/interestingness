@@ -46,8 +46,8 @@ from torchvision.datasets import CocoDetection
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from torchutil import count_parameters
 from dataset import ImageData, Dronefilm
+from torchutil import count_parameters, show_batch
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 
 
@@ -63,13 +63,14 @@ def performance(loader, net):
             outputs= net(inputs)
             loss = max([criterion(outputs[i], inputs[i]) for i in range(inputs.size(0))])
             test_loss += loss.item()
-            show_batch(inputs, batch_idx, loss.item())
+            show_batch_loss(inputs, batch_idx, loss.item())
+            show_batch(inputs-outputs, 'head-map')
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
 
 
-def show_batch(batch, batch_idx, loss):
+def show_batch_loss(batch, batch_idx, loss):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
@@ -83,6 +84,7 @@ def show_batch(batch, batch_idx, loss):
     plt.title(str(batch_idx))
     plt.subplot(122)
     plt.bar(0, loss, width=0.1)
+    plt.plot([-0.05,0.05], [1.5, 1.5], 'r')
     plt.plot([-0.05,0.05], [1, 1], 'r')
     plt.axis('equal')
     plt.xlim(-0.05, 0.05)
@@ -96,7 +98,7 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.interest.car', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.interest', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -122,7 +124,7 @@ if __name__ == "__main__":
     test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
-    net = torch.load(args.model_save)
+    net = torch.load(args.model_save+'.'+args.data)
     net.set_train(False)
 
     if torch.cuda.is_available():
