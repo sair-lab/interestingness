@@ -101,6 +101,11 @@ class Interestingness(nn.Module):
         output = self.ae.decoder(states)
         return output
 
+    def listen(self, x):
+        coding = self.ae.encoder(x)
+        states = self.memory.read(coding)
+        return self.ae.decoder(states)
+
     def set_parameters(self):
         for param in self.ae.parameters():
             param.requires_grad = False

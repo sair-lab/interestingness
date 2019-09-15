@@ -78,9 +78,9 @@ class Memory(nn.Module):
 if __name__ == "__main__":
     from torch.utils.tensorboard import SummaryWriter
     import time
-    logger =  SummaryWriter('runs/memory'+str(time.time()))
+    logger =  SummaryWriter('runs/memory-'+str(time.time()))
 
-    N, B, C, H, W = 1, 1, 1, 3, 20
+    N, B, C, H, W = 1, 1, 1, 3, 3
     mem = Memory(N, C, H, W)
 
     def criterion(a, b):
@@ -101,8 +101,8 @@ if __name__ == "__main__":
         logger.add_images('k2r', r2, i)
         logger.add_images('memory', mem.memory.data, i)
 
-    k1 = _normalize(torch.rand(B, C, H, W))
-    k2 = _normalize(torch.rand(B, C, H, W))
+    k1 = _normalize(torch.randn(B, C, H, W))
+    k2 = _normalize(torch.randn(B, C, H, W))
 
     logger.add_images('k1', k1/k1.max())
     logger.add_images('k2', k2/k2.max())

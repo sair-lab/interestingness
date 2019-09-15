@@ -130,9 +130,16 @@ def show_batch(batch, name='video'):
         batch = torch.zeros(batch.size())
     grid = torchvision.utils.make_grid(batch).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     cv2.imshow(name, img)
     cv2.waitKey(1)
+
+
+def show_batch_origin(batch, name='video'):
+    grid = torchvision.utils.make_grid(batch).cpu()
+    img = grid.numpy()[::-1].transpose((1, 2, 0))
+    cv2.imshow(name, img)
+    cv2.waitKey(1)
+
 
 if __name__ == "__main__":
     motionblur = RandomMotionBlur()

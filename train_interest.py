@@ -47,7 +47,6 @@ from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur
 
 
-
 def train(loader, net):
     train_loss, batches = 0, len(loader)
     enumerater = tqdm.tqdm(enumerate(loader))
@@ -76,7 +75,22 @@ def performance(loader, net):
             outputs = net(inputs)
             loss = criterion(outputs, inputs)
             test_loss += loss.item()
-            show_batch(torch.cat([inputs,outputs], dim=0))
+            show_batch(torch.cat([inputs,outputs], dim=0), name='train')
+
+    return test_loss/(batch_idx+1)
+
+
+def test(loader, net):
+    test_loss = 0
+    with torch.no_grad():
+        for batch_idx, inputs in enumerate(loader):
+            if torch.cuda.is_available():
+                inputs = inputs.cuda()
+            inputs = Variable(inputs).view(-1,inputs.size(-3),inputs.size(-2),inputs.size(-1))
+            outputs = net.listen(inputs)
+            loss = criterion(outputs, inputs)
+            test_loss += loss.item()
+            show_batch(torch.cat([inputs,outputs], dim=0), name='test')
 
     return test_loss/(batch_idx+1)
 
@@ -126,8 +140,9 @@ if __name__ == "__main__":
     print('number of parameters:', count_parameters(net))
     best_loss = float('Inf')
     for epoch in range(args.epochs):
-        val_loss = performance(train_loader, net)
-        print('loss:', val_loss)
+        train_loss = performance(train_loader, net)
+        val_loss = test(train_loader, net)
+        print('epoch:{} train:{} val:{}'.format(epoch, train_loss, val_loss))
 
         if val_loss < best_loss:
             print("New best Model, saving...")
