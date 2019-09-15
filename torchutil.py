@@ -29,9 +29,33 @@ import cv2
 import torch
 import random
 import numbers
+from torch import nn
 import torchvision
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+
+
+class Split2d(nn.Module):
+    def __init__(self, kernel_size=(3, 3)):
+            super(Split2d, self).__init__()
+            self.h, self.w = kernel_size
+            self.unfold = nn.Unfold(kernel_size=kernel_size, stride=kernel_size)
+
+    def forward(self, x):
+        output = self.unfold(x).view(x.size(0), x.size(1), self.h, self.w, -1)
+        return output.permute(0,4,1,2,3).contiguous().view(-1, x.size(1), self.h, self.w)
+
+
+class Merge2d(nn.Module):
+    def __init__(self, output_size, kernel_size):
+            super(Merge2d, self).__init__()
+            self.H, self.W = output_size
+            self.h, self.w = kernel_size
+            self.fold = nn.Fold(output_size, kernel_size, stride=kernel_size)
+
+    def forward(self, x):
+        output = x.view(-1, (self.H//self.h)*(self.W//self.w), x.size(1)*self.h*self.w)
+        return self.fold( output.permute(0,2,1).contiguous())
 
 
 class RandomMotionBlur(object):
@@ -143,3 +167,9 @@ def show_batch_origin(batch, name='video'):
 
 if __name__ == "__main__":
     motionblur = RandomMotionBlur()
+    x = torch.randn(15, 512, 12, 12)
+    split = Split2d((3,3))
+    merge = Merge2d((12, 12), (3,3))
+    s = split(x)
+    o = merge(s)
+    print(x.shape, s.shape, o.shape)
