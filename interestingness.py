@@ -42,6 +42,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
 from memory import Memory
+from torchutil import Split2d, Merge2d
 from coder import Encoder, Decoder, LogVar
 
 
@@ -83,27 +84,33 @@ class VAE(AE):
 
 
 class Interestingness(nn.Module):
-    def __init__(self, autoencoder, N, C, H, W):
+    def __init__(self, autoencoder, N, C, H, W, h, w):
         super().__init__()
         self.ae = autoencoder
-        self.memory = Memory(N, C, H, W)
+        self.memory = Memory(N, C, h, w)
+        self.split2d = Split2d(kernel_size=(h, w))
+        self.merge2d = Merge2d(output_size=(H, W), kernel_size=(h, w))
         self.set_parameters()
         self.set_train(False)
 
     def forward(self, x):
         coding = self.ae.encoder(x)
+        coding = self.split2d(coding)
         if self.train:
             self.memory.write(coding)
             states = self.memory.read(coding)
         else:
             states = self.memory.read(coding)
             self.memory.write(coding)
+        states = self.merge2d(states)
         output = self.ae.decoder(states)
         return output
 
     def listen(self, x):
         coding = self.ae.encoder(x)
+        coding = self.split2d(coding)
         states = self.memory.read(coding)
+        states = self.merge2d(states)
         return self.ae.decoder(states)
 
     def set_parameters(self):
@@ -112,7 +119,7 @@ class Interestingness(nn.Module):
         for param in self.memory.parameters():
             param.requires_grad = True
 
-    def set_train(self, train=True):
+    def set_train(self, train):
         self.train = train
 
 
@@ -120,8 +127,8 @@ AutoEncoder = AE
 
 if __name__ == "__main__":
     ## for coco data
-    x = torch.rand(15, 3, 224, 224)
-    # ae = AE()
-    ae = VAE()
-    net = Interestingness(ae, 200, 512, 7, 7)
+    x = torch.rand(15, 3, 384, 384)
+    ae = AE()
+    # ae = VAE()
+    net = Interestingness(ae, 200, 512, 12, 12)
     y = net(x)

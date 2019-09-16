@@ -29,17 +29,39 @@ import cv2
 import torch
 import random
 import numbers
-from torch import nn
 import torchvision
+from torch import nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 
 
+class ConvLoss(nn.Module):
+    def __init__(self, kernel_size, in_channels=3):
+        super(ConvLoss, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, 1, kernel_size=kernel_size, stride=kernel_size//2, bias=False)
+        self.pool1 = nn.AvgPool2d(2)
+        self.pool2 = nn.AvgPool2d(3)
+        self.pool3 = nn.MaxPool2d(3)
+        self.conv1.weight.data = torch.ones(self.conv1.weight.size())/self.conv1.weight.numel()
+
+    def forward(self, x, y):
+        output = self.pool1(self.conv1((x-y).abs()))
+        return self.pool3(self.pool2(output)).squeeze()
+
+class CosineLoss(nn.CosineEmbeddingLoss):
+    def __init__(self, dim=1):
+        super(CosineLoss, self).__init__()
+        self.target = torch.ones(dim).cuda()
+
+    def forward(self, x, y):
+        return super(CosineLoss, self).forward(x, y, self.target)
+
+
 class Split2d(nn.Module):
     def __init__(self, kernel_size=(3, 3)):
-            super(Split2d, self).__init__()
-            self.h, self.w = kernel_size
-            self.unfold = nn.Unfold(kernel_size=kernel_size, stride=kernel_size)
+        super(Split2d, self).__init__()
+        self.h, self.w = kernel_size
+        self.unfold = nn.Unfold(kernel_size=kernel_size, stride=kernel_size)
 
     def forward(self, x):
         output = self.unfold(x).view(x.size(0), x.size(1), self.h, self.w, -1)
@@ -48,10 +70,10 @@ class Split2d(nn.Module):
 
 class Merge2d(nn.Module):
     def __init__(self, output_size, kernel_size):
-            super(Merge2d, self).__init__()
-            self.H, self.W = output_size
-            self.h, self.w = kernel_size
-            self.fold = nn.Fold(output_size, kernel_size, stride=kernel_size)
+        super(Merge2d, self).__init__()
+        self.H, self.W = output_size
+        self.h, self.w = kernel_size
+        self.fold = nn.Fold(output_size, kernel_size, stride=kernel_size)
 
     def forward(self, x):
         output = x.view(-1, (self.H//self.h)*(self.W//self.w), x.size(1)*self.h*self.w)
@@ -152,10 +174,11 @@ def show_batch(batch, name='video'):
         batch = (batch - min_v) / range_v
     else:
         batch = torch.zeros(batch.size())
-    grid = torchvision.utils.make_grid(batch).cpu()
+    grid = torchvision.utils.make_grid(batch, padding=0).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
     cv2.imshow(name, img)
     cv2.waitKey(1)
+    return img
 
 
 def show_batch_origin(batch, name='video'):
@@ -173,3 +196,8 @@ if __name__ == "__main__":
     s = split(x)
     o = merge(s)
     print(x.shape, s.shape, o.shape)
+    criterion = ConvLoss(kernel_size=32, in_channels=3)
+    x = torch.randn(10, 3, 320, 320)
+    y = torch.randn(10, 3, 320, 320)
+    loss = criterion(x, y)
+    print(loss.shape)

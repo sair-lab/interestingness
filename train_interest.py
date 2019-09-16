@@ -44,7 +44,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
 from interestingness import AE, VAE, Interestingness
-from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur
+from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss
 
 
 def train(loader, net):
@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     transform = transforms.Compose([
             # transforms.RandomRotation(20),
-            transforms.CenterCrop(384),
+            transforms.RandomCrop(320),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -127,13 +127,14 @@ if __name__ == "__main__":
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     net,_ = torch.load(args.model_save)
-    net = Interestingness(net, 2000, 512, 12, 12)
+    net = Interestingness(net, 4000, 512, 10, 10, 10, 10)
     net.set_train(True)
 
     if torch.cuda.is_available():
         net = net.cuda()
 
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    criterion = CosineLoss()
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = EarlyStopScheduler(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 

@@ -57,9 +57,10 @@ class Memory(nn.Module):
     def write(self, key):
         key = self._normalize(key)
         w = self._address(key)
-        memory = ((1 - w) * self.memory.data).mean(dim=0)
-        knowledge = (w * key.unsqueeze(1)).mean(dim=0)
-        self.memory.data = memory + knowledge
+        memory = (1 - w) * self.memory.data
+        knowledge = w * key.unsqueeze(1)
+        w[:,w.sum(0)==0]=1
+        self.memory.data = ((memory + knowledge)*w).sum(0)/(w.sum(0))
         self._normalize_memory()
 
     def _address(self, key):

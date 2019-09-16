@@ -49,7 +49,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
-from torchutil import count_parameters, show_batch
+from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 
 
@@ -65,14 +65,15 @@ def performance(loader, net):
             outputs= net(inputs)
             loss = criterion(outputs, inputs)
             test_loss += loss.item()
-            show_batch_box(inputs, batch_idx, loss.item())
-            show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
+            frame = show_batch_box(inputs, batch_idx, loss.item())
+            image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
+            cv2.imwrite('images/interestingness-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
 
 
-def boxbar(height, bar, ranges=[0, 2], threshold=[1.0, 1.5]):
+def boxbar(height, bar, ranges=[0, 1.5], threshold=[1, 1.1]):
     width = 15
     box = np.zeros((height,width,3), np.uint8)
     x1, y1 = 0, int((1.0-bar/(ranges[1]-ranges[0]))*height)
@@ -97,15 +98,15 @@ def show_batch_box(batch, batch_idx, loss):
     box = boxbar(grid.size(-2), loss)
     frame = np.hstack([img, box])
     cv2.imshow('interestingness', frame)
-    # cv2.imwrite('images/interestingness-%04d.png'%(batch_idx), frame*255)
-    cv2.waitKey(30)
+    cv2.waitKey(1)
+    return frame
 
 
 if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Feature Graph Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.interest', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.cos.interest', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     transform = transforms.Compose([
-            transforms.CenterCrop(384),
+            transforms.CenterCrop(320),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
@@ -137,7 +138,9 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         net = net.cuda()
 
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    # criterion = ConvLoss(kernel_size=32, in_channels=3).cuda()
+    criterion = CosineLoss()
 
     print('number of parameters:', count_parameters(net))
 
