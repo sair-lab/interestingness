@@ -35,6 +35,19 @@ import torch.nn.functional as F
 import torchvision.transforms as transforms
 
 
+def _ntuple(n):
+    def parse(x):
+        if isinstance(x, collections.abc.Iterable):
+            return x
+        return tuple(repeat(x, n))
+    return parse
+
+_single = _ntuple(1)
+_pair = _ntuple(2)
+_triple = _ntuple(3)
+_quadruple = _ntuple(4)
+
+
 class ConvLoss(nn.Module):
     def __init__(self, kernel_size, in_channels=3):
         super(ConvLoss, self).__init__()
@@ -60,7 +73,7 @@ class CosineLoss(nn.CosineEmbeddingLoss):
 class Split2d(nn.Module):
     def __init__(self, kernel_size=(3, 3)):
         super(Split2d, self).__init__()
-        self.h, self.w = kernel_size
+        self.h, self.w = _pair(kernel_size)
         self.unfold = nn.Unfold(kernel_size=kernel_size, stride=kernel_size)
 
     def forward(self, x):
@@ -71,8 +84,8 @@ class Split2d(nn.Module):
 class Merge2d(nn.Module):
     def __init__(self, output_size, kernel_size):
         super(Merge2d, self).__init__()
-        self.H, self.W = output_size
-        self.h, self.w = kernel_size
+        self.H, self.W = _pair(output_size)
+        self.h, self.w = _pair(kernel_size)
         self.fold = nn.Fold(output_size, kernel_size, stride=kernel_size)
 
     def forward(self, x):
@@ -95,7 +108,6 @@ class RandomMotionBlur(object):
         self.w5[1,:,kernel_size//2] = 1.0/kernel_size
         self.w5[2] = torch.eye(kernel_size)
         self.w5[3] = torch.eye(kernel_size).rot90()
-
 
     def __call__(self, img):
         """
@@ -162,6 +174,7 @@ class EarlyStopScheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
                 return False
             else:
                 return True
+
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
