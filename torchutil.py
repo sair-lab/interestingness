@@ -26,11 +26,15 @@
 # DAMAGE.
 
 import cv2
+import math
 import torch
 import random
 import numbers
+import collections
 import torchvision
 from torch import nn
+from itertools import repeat
+from torch import rfft, irfft
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 
@@ -176,6 +180,60 @@ class EarlyStopScheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
                 return True
 
 
+class CorrelationSimilarity(nn.Module):
+    '''
+    Correlation Similarity for multi-channel 2-D patch via FFT
+    args: input_size: tuple(H, W) --> size of last two dimensions
+    Input Shape:
+    x: tensor(B, C, H, W)
+    y: tensor(N, C, H, W)
+    Output Shape:
+    o: tensor(B, N)
+    '''
+    def __init__(self, input_size):
+        super(CorrelationSimilarity, self).__init__()
+        input_size = _pair(input_size)
+        assert(input_size[-1]!=1) # FFT2 is wrong if last dimension is 1
+        self.N = math.sqrt(input_size[0]*input_size[1])
+        self.fft_args = {'signal_ndim':2, 'normalized':True, 'onesided': True}
+        self.ifft_args = {**self.fft_args, **{'signal_sizes':input_size}}
+        self.max = nn.MaxPool2d(kernel_size=input_size)
+        g = torch.zeros(input_size).view(1,1,input_size[0], input_size[1]).cuda()
+        g[0,0,0,0] = 1
+        self.G = rfft(g, **self.fft_args)
+
+    def forward(self, x, y):
+        X = x.rfft(**self.fft_args).unsqueeze(1)
+        Y = y.rfft(**self.fft_args)
+        g = cdot(conj(X), Y).sum(dim=2).irfft(**self.ifft_args)*self.N
+        xx = x.view(x.size(0),-1).norm(dim=-1).view(x.size(0), 1)
+        yy = y.view(y.size(0),-1).norm(dim=-1).view(1, y.size(0))
+        return self.max(g).view(x.size(0), y.size(0))/xx/yy
+
+
+def cdot(X, Y):
+    '''
+    complex dot multiplication
+    '''
+    assert(X.size(-1)==Y.size(-1)==2)
+    SX, SY = X.size(), Y.size()
+    X, Y = X.view(-1,2), Y.view(-1,2)
+    A, B = X[:,0].view(SX[:-1]), X[:,1].view(SX[:-1])
+    C, D = Y[:,0].view(SY[:-1]), Y[:,1].view(SY[:-1])
+    return torch.stack((A*C - B*D, B*C + A*D), dim=-1).contiguous()
+
+
+def conj(X):
+    '''
+    complex conjugate
+    '''
+    assert(X.size(-1)==2)
+    SX = X.size()
+    X = X.view(-1,2)
+    A, B = X[:,0].view(SX[:-1]), X[:,1].view(SX[:-1])
+    return torch.stack((A, -B), dim=-1).contiguous()
+
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -214,3 +272,13 @@ if __name__ == "__main__":
     y = torch.randn(10, 3, 320, 320)
     loss = criterion(x, y)
     print(loss.shape)
+
+    C, M, N = 1, 3, 3
+    similarity = CorrelationSimilarity((M,N))
+    x = torch.randn(1, C, M, N).cuda()
+    y = torch.randn(2, C, M, N).cuda()
+    y[1,:,:,:] = x
+    k = similarity(x,y)
+    s = F.softmax(k,dim=1)
+    print(k)
+    print(s)
