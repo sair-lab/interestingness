@@ -65,13 +65,25 @@ class ConvLoss(nn.Module):
         output = self.pool1(self.conv1((x-y).abs()))
         return self.pool3(self.pool2(output)).squeeze()
 
+
 class CosineLoss(nn.CosineEmbeddingLoss):
     def __init__(self, dim=1):
         super(CosineLoss, self).__init__()
         self.target = torch.ones(dim).cuda()
 
     def forward(self, x, y):
-        return super(CosineLoss, self).forward(x, y, self.target)
+        return super(CosineLoss, self).forward(x, y, self.target)/2
+
+
+class PearsonLoss(nn.CosineEmbeddingLoss):
+    def __init__(self, dim=1):
+        super(PearsonLoss, self).__init__()
+        self.target = torch.ones(dim).cuda()
+
+    def forward(self, x, y):
+        x = x - x.mean()
+        y = y - y.mean()
+        return super(PearsonLoss, self).forward(x, y, self.target)
 
 
 class Split2d(nn.Module):
@@ -83,6 +95,21 @@ class Split2d(nn.Module):
     def forward(self, x):
         output = self.unfold(x).view(x.size(0), x.size(1), self.h, self.w, -1)
         return output.permute(0,4,1,2,3).contiguous().view(-1, x.size(1), self.h, self.w)
+
+
+class FiveSplit2d(nn.Module):
+    def __init__(self, kernel_size):
+        super(FiveSplit2d, self).__init__()
+        self.split = Split2d(kernel_size)
+        self.kernel_size = _pair(kernel_size)
+
+    def forward(self, inputs):
+        w, h = self.kernel_size
+        x = (inputs.size(-2) - w) // 2
+        y = (inputs.size(-1) - h) // 2
+        split = self.split(inputs)
+        center = inputs[:,:,x:x+w,y:y+h]
+        return torch.cat((split, center), dim=0)
 
 
 class Merge2d(nn.Module):
@@ -182,33 +209,107 @@ class EarlyStopScheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
 
 class CorrelationSimilarity(nn.Module):
     '''
-    Correlation Similarity for multi-channel 2-D patch via FFT
+    Correlation Similarity for multi-channel 2-D tensor(C, H, W) via FFT
     args: input_size: tuple(H, W) --> size of last two dimensions
     Input Shape:
     x: tensor(B, C, H, W)
     y: tensor(N, C, H, W)
     Output Shape:
-    o: tensor(B, N)
+    o: tensor(B, N)  --> maximum similarity for (x_i, y_j) {i\in [0,B), j\in [0,N)}
+    i: tensor(B, N, 2)  --> 2-D translation between x_i and y_j
     '''
     def __init__(self, input_size):
         super(CorrelationSimilarity, self).__init__()
+        self.input_size = input_size = _pair(input_size)
+        assert(input_size[-1]!=1) # FFT2 is wrong if last dimension is 1
+        self.N = math.sqrt(input_size[0]*input_size[1])
+        self.fft_args = {'signal_ndim':2, 'normalized':True, 'onesided': True}
+        self.ifft_args = {**self.fft_args, **{'signal_sizes':input_size}}
+        self.max = nn.MaxPool2d(kernel_size=input_size)
+
+    def forward(self, x, y):
+        X = x.rfft(**self.fft_args).unsqueeze(1)
+        Y = y.rfft(**self.fft_args)
+        g = cdot(conj(X), Y).sum(dim=2).irfft(**self.ifft_args)*self.N
+        xx = x.view(x.size(0),-1).norm(dim=-1).view(x.size(0), 1, 1)
+        yy = y.view(y.size(0),-1).norm(dim=-1).view(1, y.size(0), 1)
+        g = g.view(x.size(0), y.size(0),-1)/xx/yy
+        values, indices = torch.max(g, dim=-1)
+        indices = torch.stack((indices // self.input_size[1], indices % self.input_size[1]), dim=-1)
+        return values, indices
+
+
+class Correlation(nn.Module):
+    '''
+    Correlation Similarity for multi-channel 2-D patch via FFT
+    args: input_size: tuple(H, W) --> size of last two dimensions
+    Input Shape:
+    x: tensor(B, C, H, W)
+    y: tensor(B, C, H, W)
+    Output Shape:
+    o: tensor(B)
+    if accept_translation is False, output is the same with cosine similarity
+    '''
+    def __init__(self, input_size, accept_translation=True):
+        super(Correlation, self).__init__()
+        self.accept_translation = accept_translation
         input_size = _pair(input_size)
         assert(input_size[-1]!=1) # FFT2 is wrong if last dimension is 1
         self.N = math.sqrt(input_size[0]*input_size[1])
         self.fft_args = {'signal_ndim':2, 'normalized':True, 'onesided': True}
         self.ifft_args = {**self.fft_args, **{'signal_sizes':input_size}}
         self.max = nn.MaxPool2d(kernel_size=input_size)
-        g = torch.zeros(input_size).view(1,1,input_size[0], input_size[1]).cuda()
-        g[0,0,0,0] = 1
-        self.G = rfft(g, **self.fft_args)
 
     def forward(self, x, y):
-        X = x.rfft(**self.fft_args).unsqueeze(1)
-        Y = y.rfft(**self.fft_args)
-        g = cdot(conj(X), Y).sum(dim=2).irfft(**self.ifft_args)*self.N
-        xx = x.view(x.size(0),-1).norm(dim=-1).view(x.size(0), 1)
-        yy = y.view(y.size(0),-1).norm(dim=-1).view(1, y.size(0))
-        return self.max(g).view(x.size(0), y.size(0))/xx/yy
+        X, Y = x.rfft(**self.fft_args), y.rfft(**self.fft_args)
+        g = cdot(conj(X), Y).sum(dim=1).irfft(**self.ifft_args)*self.N
+        xx = x.view(x.size(0),-1).norm(dim=-1)
+        yy = y.view(y.size(0),-1).norm(dim=-1)
+        if self.accept_translation is True:
+            return self.max(g).view(-1)/xx/yy
+        else:
+            return g[:,0,0].view(-1)/xx/yy
+
+
+class CorrelationLoss(Correlation):
+    '''
+    Correlation Similarity for multi-channel 2-D patch via FFT
+    args: input_size: tuple(H, W) --> size of last two dimensions
+    Input Shape:
+    x: tensor(B, C, H, W)
+    y: tensor(B, C, H, W)
+    Output Shape:
+    o: tensor(1) if 'reduce' is True
+    o: tensor(B) if 'reduce' is not True
+    '''
+    def __init__(self, input_size, reduce = True, accept_translation=True):
+        super(CorrelationLoss, self).__init__(input_size, accept_translation)
+        self.reduce = reduce
+
+    def forward(self, x, y):
+        loss = (1 - super(CorrelationLoss, self).forward(x, y))/2
+        if self.reduce is True:
+            return loss.mean()
+        else:
+            return loss
+
+
+def rolls2d(inputs, shifts, dims):
+    '''
+    shifts: list of tuple/ints for 2-D/1-D roll
+    dims: along which dimensions to shift
+    inputs: tensor(B, C, H, W); shifts has to be int tensor
+    if shifts: tensor(B, N, 2)
+        output: tensor(B, N, C, H, W)
+    if shifts: tensor(B, 2)
+        output: tensor(B, C, H, W)
+    '''
+    shift_size, input_size = shifts.size(), inputs.size()
+    assert(shift_size[-1]==2 and input_size[0]==shift_size[0])
+    if len(shift_size) == 2:
+        return torch.stack([inputs[i].roll(shifts[i].tolist(), dims) for i in range(shift_size[0])], dim=0)
+    elif len(shift_size) == 3:
+        return torch.stack([inputs[i].roll(shifts[i,j].tolist(), dims) for i in range(shift_size[0]) for j in range(shift_size[1])], dim=0)
 
 
 def cdot(X, Y):
@@ -275,10 +376,15 @@ if __name__ == "__main__":
 
     C, M, N = 1, 3, 3
     similarity = CorrelationSimilarity((M,N))
+    corr = Correlation((M,N), accept_translation=False)
     x = torch.randn(1, C, M, N).cuda()
     y = torch.randn(2, C, M, N).cuda()
     y[1,:,:,:] = x
-    k = similarity(x,y)
-    s = F.softmax(k,dim=1)
-    print(k)
+    s, indices = similarity(x,y)
+    # s = F.softmax(k,dim=1)
     print(s)
+    print(indices)
+    x = rolls2d(x, indices, dims = [-2,-1])
+    s = corr(x,y)
+    print(s)
+    # print(indices)

@@ -49,9 +49,11 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
-from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss
+from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 
+split = Split2d((160,160))
+crop = FiveSplit2d(160)
 
 def performance(loader, net):
     test_loss = 0
@@ -63,17 +65,17 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs= net(inputs)
-            loss = criterion(outputs, inputs)
+            loss = criterion(crop(outputs), crop(inputs)).max()
             test_loss += loss.item()
             frame = show_batch_box(inputs, batch_idx, loss.item())
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
-            cv2.imwrite('images/interestingness-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            cv2.imwrite('images/interestingness-cos-split-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
 
 
-def boxbar(height, bar, ranges=[0, 1.5], threshold=[1, 1.1]):
+def boxbar(height, bar, ranges=[0, 1], threshold=[0.8, 0.9]):
     width = 15
     box = np.zeros((height,width,3), np.uint8)
     x1, y1 = 0, int((1.0-bar/(ranges[1]-ranges[0]))*height)
@@ -104,7 +106,7 @@ def show_batch_box(batch, batch_idx, loss):
 
 if __name__ == "__main__":
     # Arguements
-    parser = argparse.ArgumentParser(description='Feature Graph Networks')
+    parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/ae.pt.cos.interest', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
@@ -140,7 +142,9 @@ if __name__ == "__main__":
 
     # criterion = nn.MSELoss()
     # criterion = ConvLoss(kernel_size=32, in_channels=3).cuda()
-    criterion = CosineLoss()
+    # criterion = CosineLoss()
+    criterion = CorrelationLoss(160, reduce=False, accept_translation=False)
+    # criterion = PearsonLoss()
 
     print('number of parameters:', count_parameters(net))
 

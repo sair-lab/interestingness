@@ -97,7 +97,7 @@ def test(loader, net):
 
 if __name__ == "__main__":
     # Arguements
-    parser = argparse.ArgumentParser(description='Feature Graph Networks')
+    parser = argparse.ArgumentParser(description='Train Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
