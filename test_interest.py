@@ -67,9 +67,9 @@ def performance(loader, net):
             outputs= net(inputs)
             loss = criterion(crop(outputs), crop(inputs)).max()
             test_loss += loss.item()
-            frame = show_batch_box(inputs, batch_idx, loss.item())
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
-            cv2.imwrite('images/interestingness-cos-split-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            frame = show_batch_box(inputs, batch_idx, loss.item())
+            cv2.imwrite('images/interestingness-corr-read-split-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.cos.interest', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.corr.read.interest', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')

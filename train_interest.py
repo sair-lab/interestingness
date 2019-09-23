@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.interest.'+ args.data)
+            torch.save(net, args.model_save+'.corr.read.interest.'+ args.data)
             best_loss = val_loss
             no_decrease = 0
                 

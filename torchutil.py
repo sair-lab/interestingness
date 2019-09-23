@@ -294,7 +294,7 @@ class CorrelationLoss(Correlation):
             return loss
 
 
-def rolls2d(inputs, shifts, dims):
+def rolls2d(inputs, shifts, dims=[-2,-1]):
     '''
     shifts: list of tuple/ints for 2-D/1-D roll
     dims: along which dimensions to shift

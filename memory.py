@@ -29,6 +29,7 @@ import torch
 import numpy as np
 from torch import nn
 import torch.nn.functional as F
+from torchutil import CorrelationSimilarity, rolls2d
 
 
 class Memory(nn.Module):
@@ -45,23 +46,29 @@ class Memory(nn.Module):
         self.register_buffer('memory', torch.zeros(N, C, H, W))
         nn.init.kaiming_uniform_(self.memory)
         self._normalize_memory()
+        self.similarity = CorrelationSimilarity((H,W))
 
     def size(self):
         return self.memory.size()
 
     def read(self, key):
         key = self._normalize(key)
-        w = self._address(key)
-        return torch.sum(w * self.memory, dim=1)
+        w, trans = self._correlation_address(key)
+        memory = rolls2d(self.memory, -trans.transpose(0,1)).transpose(0,1)
+        return torch.sum(w * memory, dim=1)
 
     def write(self, key):
         key = self._normalize(key)
         w = self._address(key)
         memory = (1 - w) * self.memory.data
         knowledge = w * key.unsqueeze(1)
-        w[:,w.sum(0)==0]=1
-        self.memory.data = ((memory + knowledge)*w).sum(0)/(w.sum(0))
+        self.memory.data = (memory+ knowledge).mean(0)
         self._normalize_memory()
+
+    def _correlation_address(self, key):
+        w, trans = self.similarity(key, self.memory)
+        w = F.softmax((w*self.pi_2).tan(), dim=1)
+        return w.view(-1, self.N, 1, 1, 1), trans
 
     def _address(self, key):
         key = key.view(key.size(0), 1, -1)
