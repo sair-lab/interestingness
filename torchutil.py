@@ -304,12 +304,16 @@ def rolls2d(inputs, shifts, dims):
     if shifts: tensor(B, 2)
         output: tensor(B, C, H, W)
     '''
-    shift_size, input_size = shifts.size(), inputs.size()
-    assert(shift_size[-1]==2 and input_size[0]==shift_size[0])
+    shift_size = shifts.size()
+    B, C, H, W = inputs.size()
+    assert(shift_size[-1]==2 and B==shift_size[0])
+    B, C, H, W = inputs.size()
     if len(shift_size) == 2:
-        return torch.stack([inputs[i].roll(shifts[i].tolist(), dims) for i in range(shift_size[0])], dim=0)
+        return torch.stack([inputs[i].roll(shifts[i].tolist(), dims) for i in range(B)], dim=0)
     elif len(shift_size) == 3:
-        return torch.stack([inputs[i].roll(shifts[i,j].tolist(), dims) for i in range(shift_size[0]) for j in range(shift_size[1])], dim=0)
+        N = shift_size[1]
+        o = torch.stack([inputs[i].roll(shifts[i,j].tolist(), dims) for i in range(B) for j in range(N)], dim=0)
+        return o.view(B, N, C, H, W)
 
 
 def cdot(X, Y):
@@ -374,17 +378,18 @@ if __name__ == "__main__":
     loss = criterion(x, y)
     print(loss.shape)
 
-    C, M, N = 1, 3, 3
+    C, M, N = 2, 3, 3
     similarity = CorrelationSimilarity((M,N))
     corr = Correlation((M,N), accept_translation=False)
-    x = torch.randn(1, C, M, N).cuda()
-    y = torch.randn(2, C, M, N).cuda()
-    y[1,:,:,:] = x
+    x = torch.randn(2, C, M, N).cuda()
+    y = torch.randn(4, C, M, N).cuda()
+    y[0:2,:,:,:] = x
     s, indices = similarity(x,y)
     # s = F.softmax(k,dim=1)
     print(s)
     print(indices)
+    sr = corr(x,y[0:2])
+    print(sr)
     x = rolls2d(x, indices, dims = [-2,-1])
-    s = corr(x,y)
-    print(s)
-    # print(indices)
+    sp = corr(torch.stack((x[0,0], x[1,1]),dim=0),y[0:2])
+    print(sp)
