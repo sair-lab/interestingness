@@ -117,6 +117,7 @@ class Dronefilm(Dataset):
             self.frames = []
             for _ in range(self.nframes):
                 _, frame = cap.read()
+                frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
                 frame = Image.fromarray(frame)
                 self.frames.append(frame)
 
