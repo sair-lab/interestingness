@@ -110,13 +110,13 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
-    parser.add_argument("--loss-size", type=int, default=160, help='loss compute by grid')
+    parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
     transform = transforms.Compose([
-            transforms.CenterCrop(320),
+            transforms.CenterCrop(args.crop_size),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
@@ -130,8 +130,8 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         net = net.cuda()
 
-    criterion = CorrelationLoss(args.loss_size, reduce=False, accept_translation=True)
-    fivecrop = FiveSplit2d(args.loss_size)
+    criterion = CorrelationLoss(args.crop_size//2, reduce=False, accept_translation=True)
+    fivecrop = FiveSplit2d(args.crop_size//2)
 
     print('number of parameters:', count_parameters(net))
 

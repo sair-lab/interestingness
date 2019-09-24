@@ -54,7 +54,7 @@ class Memory(nn.Module):
     def read(self, key):
         key = self._normalize(key)
         w, trans = self._correlation_address(key)
-        memory = rolls2d(self.memory, -trans.transpose(0,1)).transpose(0,1)
+        memory = rolls2d(self.memory, -trans)
         return torch.sum(w * memory, dim=1)
 
     def write(self, key):
@@ -62,7 +62,7 @@ class Memory(nn.Module):
         w = self._address(key)
         memory = (1 - w) * self.memory.data
         knowledge = w * key.unsqueeze(1)
-        self.memory.data = (memory+ knowledge).mean(0)
+        self.memory.data = (memory + knowledge).mean(0)
         self._normalize_memory()
 
     def _correlation_address(self, key):

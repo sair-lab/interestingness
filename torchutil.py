@@ -298,21 +298,20 @@ def rolls2d(inputs, shifts, dims=[-2,-1]):
     '''
     shifts: list of tuple/ints for 2-D/1-D roll
     dims: along which dimensions to shift
-    inputs: tensor(B, C, H, W); shifts has to be int tensor
+    inputs: tensor(N, C, H, W); shifts has to be int tensor
     if shifts: tensor(B, N, 2)
         output: tensor(B, N, C, H, W)
-    if shifts: tensor(B, 2)
-        output: tensor(B, C, H, W)
+    if shifts: tensor(N, 2)
+        output: tensor(N, C, H, W)
     '''
     shift_size = shifts.size()
-    B, C, H, W = inputs.size()
-    assert(shift_size[-1]==2 and B==shift_size[0])
-    B, C, H, W = inputs.size()
+    N, C, H, W = inputs.size()
+    assert(shift_size[-1]==2 and N==shift_size[1])
     if len(shift_size) == 2:
-        return torch.stack([inputs[i].roll(shifts[i].tolist(), dims) for i in range(B)], dim=0)
+        return torch.stack([inputs[i].roll(shifts[i].tolist(), dims) for i in range(N)], dim=0)
     elif len(shift_size) == 3:
-        N = shift_size[1]
-        o = torch.stack([inputs[i].roll(shifts[i,j].tolist(), dims) for i in range(B) for j in range(N)], dim=0)
+        B = shift_size[0]
+        o = torch.stack([inputs[i].roll(shifts[j,i].tolist(), dims) for j in range(B) for i in range(N)], dim=0)
         return o.view(B, N, C, H, W)
 
 
@@ -390,6 +389,6 @@ if __name__ == "__main__":
     print(indices)
     sr = corr(x,y[0:2])
     print(sr)
-    x = rolls2d(x, indices, dims = [-2,-1])
-    sp = corr(torch.stack((x[0,0], x[1,1]),dim=0),y[0:2])
+    y = rolls2d(y, -indices, dims = [-2,-1])
+    sp = corr(x, torch.stack((y[0,0], y[1,1]),dim=0))
     print(sp)
