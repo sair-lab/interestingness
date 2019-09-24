@@ -49,8 +49,8 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
+from interestingness import AE, VAE, AutoEncoder, Interestingness, Interest
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
-from interestingness import AE, VAE, AutoEncoder, Interestingness
 
 
 def performance(loader, net):
@@ -67,9 +67,11 @@ def performance(loader, net):
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
             frame = show_batch_box(inputs, batch_idx, loss.item())
-            cv2.imwrite('images/interestingness-corr-read-split-transloss-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
-            print('loss:', loss.item())
-
+            interests = interest.add_interest(frame, loss)
+            cv2.imshow('Top interests', interests)
+            # cv2.imwrite('images/interestingness-corr-read-split-transloss-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            print('batch_idx:',batch_idx, 'loss:', loss.item())
+    cv2.waitKey(0)
     return test_loss/(batch_idx+1)
 
 
@@ -111,6 +113,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
+    parser.add_argument("--num-interest", type=int, default=3, help='loss compute by grid')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -126,6 +129,8 @@ if __name__ == "__main__":
 
     net = torch.load(args.model_save+'.'+args.data)
     net.set_train(False)
+
+    interest = Interest(args.num_interest)
 
     if torch.cuda.is_available():
         net = net.cuda()

@@ -123,12 +123,39 @@ class Interestingness(nn.Module):
         self.train = train
 
 
+class Interest():
+    '''
+    Maintain top K interests
+    '''
+    def __init__(self, K):
+        self.K = K
+        self.interests = []
+
+    def add_interest(self, tensor, loss):
+        self.interests.append((loss, tensor))
+        self.interests.sort(key=self._sort_loss, reverse=True)
+        self._maintain()
+        return np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=1)
+
+    def _sort_loss(self, val):
+        return val[0]
+
+    def _maintain(self):
+        if len(self.interests) > self.K:
+            self.interests = self.interests[:self.K]
+
+
 AutoEncoder = AE
 
 if __name__ == "__main__":
     ## for coco data
-    x = torch.rand(15, 3, 384, 384)
-    ae = AE()
+    # x = torch.rand(15, 3, 384, 384)
+    # ae = AE()
     # ae = VAE()
-    net = Interestingness(ae, 200, 512, 12, 12)
-    y = net(x)
+    # net = Interestingness(ae, 200, 512, 12, 12, 12, 12)
+    # y = net(x)
+    interest = Interest(3)
+
+    for i in range(5):
+        images = interest.add_interest(torch.randn(1,1), torch.rand(1).item())
+        print(images.shape)
