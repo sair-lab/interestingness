@@ -52,8 +52,6 @@ from dataset import ImageData, Dronefilm
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 
-split = Split2d((160,160))
-crop = FiveSplit2d(160)
 
 def performance(loader, net):
     test_loss = 0
@@ -65,11 +63,11 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs= net(inputs)
-            loss = criterion(crop(outputs), crop(inputs)).max()
+            loss = criterion(fivecrop(outputs), fivecrop(inputs)).max()
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
             frame = show_batch_box(inputs, batch_idx, loss.item())
-            cv2.imwrite('images/interestingness-corr-read-split-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            cv2.imwrite('images/interestingness-corr-read-split-transloss-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('loss:', loss.item())
 
     return test_loss/(batch_idx+1)
@@ -111,7 +109,8 @@ if __name__ == "__main__":
     parser.add_argument("--model-save", type=str, default='saves/ae.pt.corr.read.interest', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
-    parser.add_argument('--seed', type=int, default=0, help='Random seed.')
+    parser.add_argument("--seed", type=int, default=0, help='Random seed.')
+    parser.add_argument("--loss-size", type=int, default=160, help='loss compute by grid')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -122,15 +121,6 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    # transform = transforms.Compose([
-    #         transforms.RandomHorizontalFlip(),
-    #         transforms.RandomResizedCrop((384, 640)),
-    #         transforms.FiveCrop(384),
-    #         transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
-    #         transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops]))
-    #         ])
-
     test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
@@ -140,11 +130,8 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         net = net.cuda()
 
-    # criterion = nn.MSELoss()
-    # criterion = ConvLoss(kernel_size=32, in_channels=3).cuda()
-    # criterion = CosineLoss()
-    criterion = CorrelationLoss(160, reduce=False, accept_translation=False)
-    # criterion = PearsonLoss()
+    criterion = CorrelationLoss(args.loss_size, reduce=False, accept_translation=True)
+    fivecrop = FiveSplit2d(args.loss_size)
 
     print('number of parameters:', count_parameters(net))
 
