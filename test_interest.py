@@ -49,8 +49,33 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm
-from interestingness import AE, VAE, AutoEncoder, Interestingness, Interest
+from interestingness import AE, VAE, AutoEncoder, Interestingness
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
+
+
+class Interest():
+    '''
+    Maintain top K interests
+    '''
+    def __init__(self, K, ):
+        self.K = K
+        self.interests = []
+
+    def add_interest(self, tensor, loss, visualize_window=None):
+        self.interests.append((loss, tensor))
+        self.interests.sort(key=self._sort_loss, reverse=True)
+        self._maintain()
+        interests = np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=1)
+        if visualize_window is not None:
+            cv2.imshow(visualize_window, interests)
+        return interests
+
+    def _sort_loss(self, val):
+        return val[0]
+
+    def _maintain(self):
+        if len(self.interests) > self.K:
+            self.interests = self.interests[:self.K]
 
 
 def performance(loader, net):
@@ -63,14 +88,13 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs= net(inputs)
-            loss = criterion(fivecrop(outputs), fivecrop(inputs)).max()
+            loss, box_id = criterion(fivecrop(outputs), fivecrop(inputs)).max(dim=0)
             test_loss += loss.item()
-            image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
-            frame = show_batch_box(inputs, batch_idx, loss.item())
-            interests = interest.add_interest(frame, loss)
-            cv2.imshow('Top interests', interests)
+            show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
+            frame = show_batch_box(inputs, batch_idx, loss.item(), box_id)
+            interest.add_interest(frame, loss, visualize_window='Top Interests')
             # cv2.imwrite('images/interestingness-corr-read-split-transloss-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
-            print('batch_idx:',batch_idx, 'loss:', loss.item())
+            print('batch_idx:', batch_idx, 'loss:%.2f'%(loss.item()))
     cv2.waitKey(0)
     return test_loss/(batch_idx+1)
 
@@ -88,7 +112,31 @@ def boxbar(height, bar, ranges=[0, 1], threshold=[0.8, 0.9]):
     return box
 
 
-def show_batch_box(batch, batch_idx, loss):
+# class DrawBox():
+#     def __init__(self, height, width, channel=3):
+#         self.img = []
+#         color, thichness = (1,0,0), 3
+#         img = np.zeros((height,width,channel), dtype='float32')
+#         cv2.rectangle(img, (0, 0), (width//2-1, height//2-1), color, thichness)
+#         self.img.append(img)
+#         img = np.zeros((height,width,channel), dtype='float32')
+#         cv2.rectangle(img, (width//2, 0), (width-1, height//2-1), color, thichness)
+#         self.img.append(img)
+#         img = np.zeros((height,width,channel), dtype='float32')
+#         cv2.rectangle(img, (0, height//2), (width//2-1, height-1), color, thichness)
+#         self.img.append(img)
+#         img = np.zeros((height,width,channel), dtype='float32')
+#         cv2.rectangle(img, (width//2, height//2), (width-1, height-1), color, thichness)
+#         self.img.append(img)
+#         img = np.zeros((height,width,channel), dtype='float32')
+#         cv2.rectangle(img, (width//4, height//4), (width//4*3-1, height//4*3-1), color, thichness)
+#         self.img.append(img)
+
+#     def draw_box(self, img, box_id):        
+#         return self.img[box_id] + img
+
+
+def show_batch_box(batch, batch_idx, loss, box_id=None):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
@@ -97,6 +145,8 @@ def show_batch_box(batch, batch_idx, loss):
         batch = torch.zeros(batch.size())
     grid = torchvision.utils.make_grid(batch).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
+    # if box_id is not None:
+        # img = drawbox.draw_box(img, box_id.item())
     box = boxbar(grid.size(-2), loss)
     frame = np.hstack([img, box])
     cv2.imshow('interestingness', frame)
@@ -131,11 +181,12 @@ if __name__ == "__main__":
     net.set_train(False)
 
     interest = Interest(args.num_interest)
+    # drawbox = DrawBox(args.crop_size, args.crop_size)
 
     if torch.cuda.is_available():
         net = net.cuda()
 
-    criterion = CorrelationLoss(args.crop_size//2, reduce=False, accept_translation=True)
+    criterion = CorrelationLoss(args.crop_size//2, reduce=False, accept_translation=False)
     fivecrop = FiveSplit2d(args.crop_size//2)
 
     print('number of parameters:', count_parameters(net))
