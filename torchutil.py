@@ -53,17 +53,25 @@ _quadruple = _ntuple(4)
 
 
 class ConvLoss(nn.Module):
-    def __init__(self, kernel_size, in_channels=3):
+    def __init__(self, input_size, kernel_size, stride, in_channels=3, color=1):
         super(ConvLoss, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, 1, kernel_size=kernel_size, stride=kernel_size//2, bias=False)
-        self.pool1 = nn.AvgPool2d(2)
-        self.pool2 = nn.AvgPool2d(3)
-        self.pool3 = nn.MaxPool2d(3)
-        self.conv1.weight.data = torch.ones(self.conv1.weight.size())/self.conv1.weight.numel()
+        self.color, input_size, kernel_size, stride = color, _pair(input_size), _pair(kernel_size), _pair(stride)
+        self.conv = nn.Conv2d(in_channels, 1, kernel_size=kernel_size, stride=stride, bias=False)
+        self.conv.weight.data = torch.ones(self.conv.weight.size()).cuda()/self.conv.weight.numel()
+        self.width = (input_size[0] - kernel_size[0]) // stride[0] + 1
+        self.hight = (input_size[0] - kernel_size[1]) // stride[1] + 1
+        self.pool = nn.MaxPool2d((self.width, self.hight))
 
     def forward(self, x, y):
-        output = self.pool1(self.conv1((x-y).abs()))
-        return self.pool3(self.pool2(output)).squeeze()
+        loss = self.conv((x-y).abs())
+        value, index = loss.view(-1).max(dim=0)
+        w = (index//self.width)*self.conv.stride[0]
+        h = (index%self.width)*self.conv.stride[1]
+        x[:,:,w:w+self.conv.kernel_size[0],h] -= self.color
+        x[:,:,w:w+self.conv.kernel_size[0],h+self.conv.kernel_size[1]-1] -= self.color
+        x[:,:,w,h:h+self.conv.kernel_size[1]] -= self.color
+        x[:,:,w+self.conv.kernel_size[0]-1,h:h+self.conv.kernel_size[1]] -= self.color
+        return value
 
 
 class CosineLoss(nn.CosineEmbeddingLoss):

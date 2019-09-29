@@ -57,7 +57,7 @@ class Interest():
     '''
     Maintain top K interests
     '''
-    def __init__(self, K, ):
+    def __init__(self, K):
         self.K = K
         self.interests = []
 
@@ -65,7 +65,7 @@ class Interest():
         self.interests.append((loss, tensor))
         self.interests.sort(key=self._sort_loss, reverse=True)
         self._maintain()
-        interests = np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=1)
+        interests = np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=0)
         if visualize_window is not None:
             cv2.imshow(visualize_window, interests)
         return interests
@@ -88,13 +88,14 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs= net(inputs)
-            loss, box_id = criterion(fivecrop(outputs), fivecrop(inputs)).max(dim=0)
+            loss = criterion(fivecrop(inputs), fivecrop(outputs)).max()
+            drawbox(inputs, outputs)
             test_loss += loss.item()
-            show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
-            frame = show_batch_box(inputs, batch_idx, loss.item(), box_id)
+            image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
+            frame = show_batch_box(inputs, batch_idx, loss.item())
             interest.add_interest(frame, loss, visualize_window='Top Interests')
-            # cv2.imwrite('images/interestingness-corr-read-split-transloss-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
-            print('batch_idx:', batch_idx, 'loss:%.2f'%(loss.item()))
+            cv2.imwrite('images/interestingness-convmse-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
     cv2.waitKey(0)
     return test_loss/(batch_idx+1)
 
@@ -112,30 +113,6 @@ def boxbar(height, bar, ranges=[0, 1], threshold=[0.8, 0.9]):
     return box
 
 
-# class DrawBox():
-#     def __init__(self, height, width, channel=3):
-#         self.img = []
-#         color, thichness = (1,0,0), 3
-#         img = np.zeros((height,width,channel), dtype='float32')
-#         cv2.rectangle(img, (0, 0), (width//2-1, height//2-1), color, thichness)
-#         self.img.append(img)
-#         img = np.zeros((height,width,channel), dtype='float32')
-#         cv2.rectangle(img, (width//2, 0), (width-1, height//2-1), color, thichness)
-#         self.img.append(img)
-#         img = np.zeros((height,width,channel), dtype='float32')
-#         cv2.rectangle(img, (0, height//2), (width//2-1, height-1), color, thichness)
-#         self.img.append(img)
-#         img = np.zeros((height,width,channel), dtype='float32')
-#         cv2.rectangle(img, (width//2, height//2), (width-1, height-1), color, thichness)
-#         self.img.append(img)
-#         img = np.zeros((height,width,channel), dtype='float32')
-#         cv2.rectangle(img, (width//4, height//4), (width//4*3-1, height//4*3-1), color, thichness)
-#         self.img.append(img)
-
-#     def draw_box(self, img, box_id):        
-#         return self.img[box_id] + img
-
-
 def show_batch_box(batch, batch_idx, loss, box_id=None):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
@@ -145,8 +122,6 @@ def show_batch_box(batch, batch_idx, loss, box_id=None):
         batch = torch.zeros(batch.size())
     grid = torchvision.utils.make_grid(batch).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
-    # if box_id is not None:
-        # img = drawbox.draw_box(img, box_id.item())
     box = boxbar(grid.size(-2), loss)
     frame = np.hstack([img, box])
     cv2.imshow('interestingness', frame)
@@ -181,11 +156,10 @@ if __name__ == "__main__":
     net.set_train(False)
 
     interest = Interest(args.num_interest)
-    # drawbox = DrawBox(args.crop_size, args.crop_size)
-
     if torch.cuda.is_available():
         net = net.cuda()
 
+    drawbox = ConvLoss(input_size=args.crop_size, kernel_size=args.crop_size//2, stride=args.crop_size//4)
     criterion = CorrelationLoss(args.crop_size//2, reduce=False, accept_translation=False)
     fivecrop = FiveSplit2d(args.crop_size//2)
 
