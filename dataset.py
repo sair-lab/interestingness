@@ -62,6 +62,7 @@ class VideoData(Dataset):
 
     def __getitem__(self, idx):
         _, frame = self.cap.read()
+        frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         frame = Image.fromarray(frame)
         if self.transform is not None:
             frame = self.transform(frame)
@@ -134,6 +135,41 @@ class Dronefilm(Dataset):
         return frame
 
 
+
+class SubT(Dataset):
+    '''
+    The DARPA Subterranean (SubT) Challenge data recorded by Team Exploer 
+    '''
+    def __init__(self, root, data='tunnel-0', test='2019-08-17/ugv_1/right.mkv', train=True, transform=None):
+        super().__init__()
+        self.transform, self.train = transform, train
+
+        if train is True:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'subt', data, 'train/*.png')))
+            self.nframes = len(self.filenames)
+        else:
+            filenames = os.path.join(root, 'subt', data, test)
+            self.cap = cv2.VideoCapture(filenames)
+            self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.fps =  int(self.cap.get(cv2.CAP_PROP_FPS))
+            self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def __len__(self):
+        return self.nframes
+
+    def __getitem__(self, idx):
+        if self.train is True:
+            frame = Image.open(self.filenames[idx])
+        else:
+            _, frame = self.cap.read()
+            frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+            frame = Image.fromarray(frame)
+        if self.transform is not None:
+            frame = self.transform(frame)
+        return frame
+
+
 def save_batch(batch, folder, batch_idx):
     torchvision.utils.save_image(batch, folder+"%04d"%batch_idx+'.png')
 
@@ -152,8 +188,8 @@ if __name__ == "__main__":
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    # video = VideoData(root='/data/datasets/dronefilm/bike/train', file='train-1.avi', transform=transform)
-    # loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
+    video = VideoData(root='/data/datasets/subt/tunnel-0/2019-08-21/ugv_0', file='right.mkv', transform=transform)
+    loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
     # images = ImageData('dronefilm/unintrests', transform=transform)
     # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
@@ -161,17 +197,15 @@ if __name__ == "__main__":
     # images = Mavscout('/data/datasets', transform=transform)
     # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
 
-    data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
-    loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
+    # data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
+    # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
 
     for batch_idx, frame in enumerate(loader):
-        if batch_idx%15==0:
-            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
-            show_batch(frame)
         # if batch_idx%15==0:
-            # cv2.imwrite('/data/datasets/dronefilm/car/train/t3-'+"%04d"%batch_idx+'.png', frame)
-            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t2-', batch_idx)
+            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
+        if batch_idx%120==0:
+            show_batch(frame)
+            # cv2.imwrite('/data/datasets/subt/tunnel-0/train/0817ugv0-'+"%04d"%batch_idx+'.png', frame)
+            save_batch(frame, '/data/datasets/subt/tunnel-0/train/0821ugv0r-', batch_idx)
             # show_batch(frame)
             print(batch_idx)
-
-
