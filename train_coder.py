@@ -86,7 +86,8 @@ if __name__ == "__main__":
     parser.add_argument("--net", type=str, default='AE', help="AE or VAE")
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--annFile", type=str, default='/data/datasets', help="learning rate")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
+    parser.add_argument('--crop-size', nargs='+', type=int, default=[352,640], help='image crop size')
+    parser.add_argument("--model-save", type=str, default='saves/ae.352x640.pt', help="model save point")
     parser.add_argument('--resume', dest='resume', action='store_true')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
@@ -105,16 +106,14 @@ if __name__ == "__main__":
         f.write(str(args)+'\n')
 
     train_transform = transforms.Compose([
-            transforms.RandomRotation(20),
-            transforms.RandomResizedCrop(384),
+            # transforms.RandomRotation(20),
+            transforms.CenterCrop(tuple(args.crop_size)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            RandomMotionBlur(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     val_transform = transforms.Compose([
-            transforms.RandomResizedCrop(384),
+            transforms.CenterCrop(tuple(args.crop_size)),
             transforms.ToTensor(),
-            RandomMotionBlur(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
     train_root = os.path.join(args.data_root, 'coco/images/train2017')
