@@ -149,7 +149,6 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    # 2019-10-08, by yf, changed to subT
     # test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
     test_data = SubT(root=args.data_root, train=False, transform=transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)

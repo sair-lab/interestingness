@@ -111,8 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
     parser.add_argument("--w-decay", type=float, default=1e-2, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
-    # 2019-10-09, adde by yf
-    parser.add_argument('--loss_criterion', type=str, default='l1', help='loss criterion')
+    parser.add_argument('--loss-criterion', type=str, default='l1', help='loss criterion')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -124,7 +123,7 @@ if __name__ == "__main__":
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
-    # 2019-10-08, changed by yf
+    # train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
     train_data = SubT(root=args.data_root, train=True, transform=transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
@@ -155,7 +154,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.corr.read.interest.' + args.loss_criterion + '.' + args.data)
+            torch.save(net, args.model_save+'.corr.read.interest.'+args.loss_criterion+'.'+args.data)
             best_loss = val_loss
             no_decrease = 0
                 
