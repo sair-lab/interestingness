@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# 2019-10-10, yf
+.idea/
+saves/
+.gitignore
+
