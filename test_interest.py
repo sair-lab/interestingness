@@ -52,6 +52,9 @@ from dataset import ImageData, Dronefilm, SubT
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 
+# 2019-10-10, yf,
+from torch.utils.tensorboard import SummaryWriter
+logger = SummaryWriter('runs/')
 
 class Interest():
     '''

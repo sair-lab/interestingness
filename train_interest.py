@@ -46,6 +46,9 @@ from dataset import ImageData, Dronefilm, SubT
 from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
+# 2019-10-10, yf,
+from torch.utils.tensorboard import SummaryWriter
+logger = SummaryWriter('runs/')
 
 def train(loader, net):
     train_loss, batches = 0, len(loader)
