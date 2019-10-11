@@ -52,7 +52,7 @@ from dataset import ImageData, Dronefilm, SubT
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 
-# 2019-10-10, yf,
+# 2019-10-10, yf
 from torch.utils.tensorboard import SummaryWriter
 logger = SummaryWriter('runs/')
 
@@ -99,6 +99,9 @@ def performance(loader, net):
             interest.add_interest(frame, loss, visualize_window='Top Interests')
             cv2.imwrite('images/interestingness-convmse-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
+
+            # 2019-10-10, yf
+            logger.add_scalar('loss', loss.item(), batch_idx)
     cv2.waitKey(0)
     return test_loss/(batch_idx+1)
 
