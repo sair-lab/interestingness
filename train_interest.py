@@ -44,8 +44,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm, SubT
 from interestingness import AE, VAE, Interestingness
-from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss
+from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
+# 2019-10-10, yf,
+from torch.utils.tensorboard import SummaryWriter
+logger = SummaryWriter('runs/')
 
 def train(loader, net):
     train_loss, batches = 0, len(loader)
@@ -141,6 +144,8 @@ if __name__ == "__main__":
         criterion = nn.MSELoss()
     elif args.loss_criterion == 'cos':
         criterion = CosineLoss()
+    elif args.loss_criterion == 'pearson':
+        criterion = PearsonLoss()
 
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
     scheduler = EarlyStopScheduler(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
