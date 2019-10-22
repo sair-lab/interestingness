@@ -36,6 +36,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
 import torch.utils.data as Data
+import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
@@ -104,7 +105,8 @@ class Interestingness(nn.Module):
             self.memory.write(coding)
         states = self.merge2d(states)
         output = self.ae.decoder(states)
-        return output
+        loss = 1 - F.cosine_similarity(coding.view(coding.size(1),-1), states.view(states.size(1),-1),dim=-1).mean()
+        return output, loss
 
     def listen(self, x):
         coding = self.ae.encoder(x)

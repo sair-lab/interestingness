@@ -64,7 +64,7 @@ class Interest():
         self.interests.append((loss, tensor))
         self.interests.sort(key=self._sort_loss, reverse=True)
         self._maintain()
-        interests = np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=0)
+        interests = np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=1)
         if visualize_window is not None:
             cv2.imshow(visualize_window, interests)
         return interests
@@ -81,13 +81,13 @@ def performance(loader, net):
     test_loss = 0
     with torch.no_grad():
         for batch_idx, inputs in enumerate(loader):
-            if batch_idx % 10 !=0:
+            if batch_idx % 5 !=0:
                 continue
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
-            outputs= net(inputs)
-            loss = criterion(fivecrop(inputs), fivecrop(outputs)).max()
+            outputs, loss = net(inputs)
+            # loss = criterion(fivecrop(inputs), fivecrop(outputs)).max()
             drawbox(inputs, outputs)
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
@@ -133,12 +133,12 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.corr.read.interest', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.drone.interest.l1', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
-    parser.add_argument("--num-interest", type=int, default=3, help='loss compute by grid')
+    parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -151,8 +151,8 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    # test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
-    test_data = SubT(root=args.data_root, train=False, transform=transform)
+    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
+    # test_data = SubT(root=args.data_root, train=False, transform=transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     net = torch.load(args.model_save+'.'+args.data)

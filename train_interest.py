@@ -123,8 +123,8 @@ if __name__ == "__main__":
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
-    # train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
-    train_data = SubT(root=args.data_root, train=True, transform=transform)
+    train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
+    # train_data = SubT(root=args.data_root, train=True, transform=transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     net,_ = torch.load(args.model_save)
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.corr.read.interest.'+args.loss_criterion+'.'+args.data)
+            torch.save(net, args.model_save+'.drone.interest.'+args.loss_criterion+'.'+args.data)
             best_loss = val_loss
             no_decrease = 0
                 
