@@ -74,6 +74,29 @@ class ConvLoss(nn.Module):
         return value
 
 
+class CosineSimilarity(nn.Module):
+    '''
+    Averaged Cosine Similarity for 3-D tensor(C, H, W) over channel dimension
+    Input Shape:
+    x: tensor(N, C, H, W)
+    y: tensor(B, C, H, W)
+    Output Shape:
+    o: tensor(N, B)
+    '''
+    def __init__(self, eps=1e-7):
+        super(CosineSimilarity, self).__init__()
+        self.eps = eps
+
+    def forward(self, x, y):
+        N, C, H, W = x.size()
+        B, c, h, w = y.size()
+        assert(C==c and H==h and W==w)
+        x, y = x.view(N,1,C,H*W), y.view(B,C,H*W)
+        xx, yy = x.norm(dim=-1), y.norm(dim=-1)
+        xx[xx<self.eps], yy[yy<self.eps] = self.eps, self.eps
+        return ((x*y).sum(dim=-1)/(xx*yy)).mean(dim=-1)
+
+
 class CosineLoss(nn.CosineEmbeddingLoss):
     def __init__(self, dim=1):
         super(CosineLoss, self).__init__()
@@ -370,33 +393,3 @@ def show_batch_origin(batch, name='video'):
     cv2.imshow(name, img)
     cv2.waitKey(1)
 
-
-if __name__ == "__main__":
-    motionblur = RandomMotionBlur()
-    x = torch.randn(15, 512, 12, 12)
-    split = Split2d((3,3))
-    merge = Merge2d((12, 12), (3,3))
-    s = split(x)
-    o = merge(s)
-    print(x.shape, s.shape, o.shape)
-    criterion = ConvLoss(kernel_size=32, in_channels=3)
-    x = torch.randn(10, 3, 320, 320)
-    y = torch.randn(10, 3, 320, 320)
-    loss = criterion(x, y)
-    print(loss.shape)
-
-    C, M, N = 2, 3, 3
-    similarity = CorrelationSimilarity((M,N))
-    corr = Correlation((M,N), accept_translation=False)
-    x = torch.randn(2, C, M, N).cuda()
-    y = torch.randn(4, C, M, N).cuda()
-    y[0:2,:,:,:] = x
-    s, indices = similarity(x,y)
-    # s = F.softmax(k,dim=1)
-    print(s)
-    print(indices)
-    sr = corr(x,y[0:2])
-    print(sr)
-    y = rolls2d(y, -indices, dims = [-2,-1])
-    sp = corr(x, torch.stack((y[0,0], y[1,1]),dim=0))
-    print(sp)
