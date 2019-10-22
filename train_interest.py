@@ -46,9 +46,6 @@ from dataset import ImageData, Dronefilm, SubT
 from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
-# 2019-10-10, yf,
-from torch.utils.tensorboard import SummaryWriter
-logger = SummaryWriter('runs/')
 
 def train(loader, net):
     train_loss, batches = 0, len(loader)
@@ -108,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
     parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
-    parser.add_argument("--epochs", type=int, default=1000, help="number of training epochs")
+    parser.add_argument("--epochs", type=int, default=5, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
@@ -137,7 +134,6 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         net = net.cuda()
 
-    # 2019-10-08, changed by yf
     if args.loss_criterion == 'l1':
         criterion = nn.L1Loss()
     elif args.loss_criterion == 'mse':
