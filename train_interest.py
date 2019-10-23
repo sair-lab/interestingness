@@ -111,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
     parser.add_argument("--w-decay", type=float, default=1e-2, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
-    parser.add_argument('--loss-criterion', type=str, default='l1', help='loss criterion')
+    parser.add_argument('--loss', type=str, default='mse', help='loss criterion')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -134,13 +134,13 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         net = net.cuda()
 
-    if args.loss_criterion == 'l1':
+    if args.loss == 'l1':
         criterion = nn.L1Loss()
-    elif args.loss_criterion == 'mse':
+    elif args.loss == 'mse':
         criterion = nn.MSELoss()
-    elif args.loss_criterion == 'cos':
+    elif args.loss == 'cos':
         criterion = CosineLoss()
-    elif args.loss_criterion == 'pearson':
+    elif args.loss == 'pearson':
         criterion = PearsonLoss()
 
     optimizer = optim.RMSprop(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.w_decay)
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.drone.interest.'+args.loss_criterion+'.'+args.data)
+            torch.save(net, args.model_save+'.drone.interest.'+args.loss+'.'+args.data)
             best_loss = val_loss
             no_decrease = 0
                 

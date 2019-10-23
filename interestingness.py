@@ -108,7 +108,7 @@ class Interestingness(nn.Module):
             self.memory.write(coding)
             states = self.merge2d(states)
             output = self.ae.decoder(states)
-            return output, 1 - self.similarity(coding, states).squeeze()
+            return output, 1-F.cosine_similarity(coding.view(coding.size(1),-1), states.view(states.size(1),-1),dim=-1).mean()
 
     def listen(self, x):
         coding = self.ae.encoder(x)
