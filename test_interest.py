@@ -87,7 +87,6 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs, loss = net(inputs)
-            # loss = criterion(fivecrop(inputs), fivecrop(outputs)).max()
             drawbox(inputs, outputs)
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
@@ -100,7 +99,7 @@ def performance(loader, net):
     return test_loss/(batch_idx+1)
 
 
-def boxbar(height, bar, ranges=[0, 1], threshold=[0.8, 0.9]):
+def boxbar(height, bar, ranges=[0, 0.1], threshold=[0.05, 0.06]):
     width = 15
     box = np.zeros((height,width,3), np.uint8)
     x1, y1 = 0, int((1.0-bar/(ranges[1]-ranges[0]))*height)
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.drone.interest.l1', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.drone.interest.mse', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')

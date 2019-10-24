@@ -43,9 +43,8 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
 from memory import Memory
-from torchutil import Split2d, Merge2d
 from coder import Encoder, Decoder, LogVar
-
+from torchutil import Split2d, Merge2d, CosineSimilarity
 
 class AE(nn.Module):
     def __init__(self):
@@ -91,6 +90,7 @@ class Interestingness(nn.Module):
         self.memory = Memory(N, C, h, w)
         self.split2d = Split2d(kernel_size=(h, w))
         self.merge2d = Merge2d(output_size=(H, W), kernel_size=(h, w))
+        self.similarity = CosineSimilarity()
         self.set_parameters()
         self.set_train(False)
 
@@ -100,13 +100,15 @@ class Interestingness(nn.Module):
         if self.train:
             self.memory.write(coding)
             states = self.memory.read(coding)
+            states = self.merge2d(states)
+            output = self.ae.decoder(states)
+            return output
         else:
             states = self.memory.read(coding)
             self.memory.write(coding)
-        states = self.merge2d(states)
-        output = self.ae.decoder(states)
-        loss = 1 - F.cosine_similarity(coding.view(coding.size(1),-1), states.view(states.size(1),-1),dim=-1).mean()
-        return output, loss
+            states = self.merge2d(states)
+            output = self.ae.decoder(states)
+            return output, 1-F.cosine_similarity(coding.view(coding.size(1),-1), states.view(states.size(1),-1),dim=-1).mean()
 
     def listen(self, x):
         coding = self.ae.encoder(x)
