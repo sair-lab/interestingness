@@ -125,9 +125,9 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    if args.dadataset_type == 'drone':
+    if args.dataset_type == 'drone':
         train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
-    elif args.dadataset_type == 'subT':
+    elif args.dataset_type == 'subT':
         train_data = SubT(root=args.data_root, train=True, transform=transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
