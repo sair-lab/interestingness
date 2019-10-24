@@ -81,7 +81,7 @@ def performance(loader, net):
     test_loss = 0
     with torch.no_grad():
         for batch_idx, inputs in enumerate(loader):
-            if batch_idx % 4 !=0:
+            if batch_idx % args.skip_frames !=0:
                 continue
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
@@ -138,6 +138,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
+    parser.add_argument("--skip-frames", type=int, default=30, help='skip frame')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -150,8 +151,8 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
-    # test_data = SubT(root=args.data_root, train=False, transform=transform)
+    # test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
+    test_data = SubT(root=args.data_root, train=False, transform=transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     net = torch.load(args.model_save+'.'+args.data)
