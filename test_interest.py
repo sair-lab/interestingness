@@ -48,7 +48,7 @@ from torchvision.datasets import CocoDetection
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, SubT
+from dataset import ImageData, Dronefilm, SubT, SubTF
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 
@@ -91,8 +91,9 @@ def performance(loader, net):
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
             frame = show_batch_box(inputs, batch_idx, loss.item())
-            interest.add_interest(frame, loss, visualize_window='Top Interests')
-            cv2.imwrite('images/interestingness-convmse-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            if batch_idx > 10:
+                interest.add_interest(frame, loss, visualize_window='Top Interests')
+            # cv2.imwrite('images/interestingness-convmse-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
             logger.add_scalar('loss', loss.item(), batch_idx)
     cv2.waitKey(0)
@@ -132,13 +133,14 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.drone.interest.mse', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.subt.interest.mse', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
-    parser.add_argument("--skip-frames", type=int, default=30, help='skip frame')
+    parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
+    parser.add_argument('--dataset', type=str, default='subTF', help='dataset type (subT ot drone')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -151,11 +153,16 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    # test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
-    test_data = SubT(root=args.data_root, train=False, transform=transform)
+    if args.dataset == 'drone':
+        test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
+    elif args.dataset == 'subT':
+        test_data = SubT(root=args.data_root, train=False, transform=transform)
+    elif args.dataset == 'subTF':
+        test_data = SubTF(root=args.data_root, train=False, test_data=1, transform=transform)
+
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
-    net = torch.load(args.model_save+'.'+args.data)
+    net = torch.load(args.model_save)
     net.set_train(False)
 
     interest = Interest(args.num_interest)
