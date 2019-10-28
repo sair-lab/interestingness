@@ -138,9 +138,9 @@ class Dronefilm(Dataset):
 
 class SubT(Dataset):
     '''
-    The DARPA Subterranean (SubT) Challenge data recorded by Team Exploer 
+    The DARPA Subterranean (SubT) Challenge data recorded by Team Exploer
     '''
-    def __init__(self, root, data='tunnel-0', test='2019-08-17/ugv_1/right.mkv', train=True, transform=None):
+    def __init__(self, root, data='tunnel-0', test='2019-08-17/ugv_1/front.mkv', train=True, transform=None):
         super().__init__()
         self.transform, self.train = transform, train
 
@@ -170,8 +170,43 @@ class SubT(Dataset):
         return frame
 
 
+class SubTF(Dataset):
+    '''
+    The DARPA Subterranean (SubT) Challenge front camera data recorded by Team Exploer
+    args:
+    root: dataset location (without subt-front)
+    train: bool value
+    test_data: test_data id [0-7], ignored if train=True
+    '''
+    data = ['0817-ugv0-tunnel0',
+            '0817-ugv1-tunnel0',
+            '0821-ugv0-tunnel0',
+            '0821-ugv1-tunnel0',
+            '0818-ugv0-tunnel1',
+            '0818-ugv1-tunnel1',
+            '0820-ugv0-tunnel1']
+
+    def __init__(self, root, train=True, test_data=0, transform=None):
+        super().__init__()
+        self.transform, self.train = transform, train
+        if train is True:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'subt-front', 'train/*.png')))
+        else:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'subt-front', self.data[test_data], '*.png')))
+        self.nframes = len(self.filenames)
+
+    def __len__(self):
+        return self.nframes
+
+    def __getitem__(self, idx):
+        frame = Image.open(self.filenames[idx])
+        if self.transform is not None:
+            frame = self.transform(frame)
+        return frame
+
+
 def save_batch(batch, folder, batch_idx):
-    torchvision.utils.save_image(batch, folder+"%04d"%batch_idx+'.png')
+    torchvision.utils.save_image(batch, folder+"%06d"%batch_idx+'.png')
 
 
 if __name__ == "__main__":
@@ -182,14 +217,13 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
 
     transform = transforms.Compose([
-        # transforms.Resize(384),
-        # transforms.CenterCrop(384),
+        transforms.CenterCrop(320),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    video = VideoData(root='/data/datasets/subt/tunnel-0/2019-08-21/ugv_0', file='right.mkv', transform=transform)
-    loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
+    # video = VideoData(root='/data/datasets/subt/tunnel-1/2019-08-20/ugv_0', file='front.mkv', transform=transform)
+    # loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
     
     # images = ImageData('dronefilm/unintrests', transform=transform)
     # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
@@ -200,12 +234,15 @@ if __name__ == "__main__":
     # data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
     # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
 
+    data = SubTF(root="/data/datasets", train=True, test_data=0, transform=transform)
+    loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
+
     for batch_idx, frame in enumerate(loader):
         # if batch_idx%15==0:
             # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
-        if batch_idx%120==0:
-            show_batch(frame)
+        # if batch_idx%30==0:
+            show_batch(frame, waitkey=300)
             # cv2.imwrite('/data/datasets/subt/tunnel-0/train/0817ugv0-'+"%04d"%batch_idx+'.png', frame)
-            save_batch(frame, '/data/datasets/subt/tunnel-0/train/0821ugv0r-', batch_idx)
+            # save_batch(frame, '/data/datasets/subt/tunnel-1/2019-08-20/ugv_0/front/', batch_idx)
             # show_batch(frame)
             print(batch_idx)

@@ -373,7 +373,7 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def show_batch(batch, name='video'):
+def show_batch(batch, name='video', waitkey=1):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
@@ -383,13 +383,13 @@ def show_batch(batch, name='video'):
     grid = torchvision.utils.make_grid(batch, padding=0).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
     cv2.imshow(name, img)
-    cv2.waitKey(1)
+    cv2.waitKey(waitkey)
     return img
 
 
-def show_batch_origin(batch, name='video'):
+def show_batch_origin(batch, name='video', waitkey=1):
     grid = torchvision.utils.make_grid(batch).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
     cv2.imshow(name, img)
-    cv2.waitKey(1)
+    cv2.waitKey(waitkey)
 

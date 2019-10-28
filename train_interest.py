@@ -42,7 +42,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, SubT
+from dataset import ImageData, Dronefilm, SubT, SubTF
 from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
@@ -100,7 +100,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
-    parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
@@ -112,23 +111,33 @@ if __name__ == "__main__":
     parser.add_argument("--w-decay", type=float, default=1e-2, help="weight decay of the optimizer")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--loss', type=str, default='mse', help='loss criterion')
-    parser.add_argument('--dataset-type', type=str, default='drone', help='dataset type (subT ot drone')
+    parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
+    parser.add_argument('--dataset', type=str, default='subTF', help='dataset type (subT ot drone')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
     transform = transforms.Compose([
             # transforms.RandomRotation(20),
-            transforms.RandomCrop(320),
+            transforms.RandomCrop(args.crop_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
+<<<<<<< HEAD
     if args.dataset_type == 'drone':
         train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
     elif args.dataset_type == 'subT':
+=======
+    if args.dataset == 'drone':
+        train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
+    elif args.dataset == 'subT':
+>>>>>>> feefbe7a772a2e5db93a446051294a0ac3626bcb
         train_data = SubT(root=args.data_root, train=True, transform=transform)
+    elif args.dataset == 'subTF':
+        train_data = SubTF(root=args.data_root, train=True, transform=transform)
+
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     net,_ = torch.load(args.model_save)
@@ -159,7 +168,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.'+args.dataset_type+'.interest.'+args.loss+'.'+args.data)
+            torch.save(net, args.model_save+'.'+args.dataset+'.interest.'+args.loss)
             best_loss = val_loss
             no_decrease = 0
                 
