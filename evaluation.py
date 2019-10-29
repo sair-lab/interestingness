@@ -30,10 +30,12 @@ import os.path
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
+
 
 def detected(N, K, obj):
     window = np.sort(result[max(0,obj-N+1):obj+1,1])[::-1]
-    if window.shape[0] < K or result[obj, 1] >= window[K-1]:
+    if window.shape[0] < K or (result[max(0,obj-args.tol):min(obj+args.tol+1, length), 1] >= window[K-1]).sum()>0:
         return True
     else:
         return False
@@ -46,8 +48,8 @@ if __name__ == "__main__":
     parser.add_argument("--result", type=str, default='results/result.txt', help="results file")
     parser.add_argument("--min-object", type=int, default=10, help="minimum object number")
     parser.add_argument("--resolution", type=int, default=100, help="the number of different sliding windows")
-    parser.add_argument('--nargs-int-type', nargs='+', type=int)
-    parser.add_argument("--sigma", nargs='+', type=float, default=[1,2,3,5,10], help="top sigma*k interests")
+    parser.add_argument("--tol", type=int, default=1, help="the number of different sliding windows")
+    parser.add_argument("--delta", nargs='+', type=float, default=[1,2,4], help="top delta*k interests")
     args = parser.parse_args(); print(args)
     
     source = np.loadtxt(args.source, dtype=int)
@@ -60,19 +62,24 @@ if __name__ == "__main__":
     frames = np.zeros(length, dtype=int)
     frames[source] = 1
 
-    for sigma in args.sigma:
+    figure(num=1, figsize=(4, 4), facecolor='w', edgecolor='k')
+    for delta in args.delta:
         for idx in range(1, args.resolution+1):
             detect, N = 0, idx*length//args.resolution
             for obj in source:
-                K = max(10, int(frames[max(0,obj-N+1):obj+1].sum()*sigma))
+                K = max(10, int(frames[max(0,obj-N+1):obj+1].sum()*delta))
                 if detected(N, K, obj) is True:
                     detect += 1
             accuracy[idx] = detect/objects
 
         x_axis, y_axis = np.array(range(args.resolution+1))/args.resolution, accuracy
-        line, = plt.plot(x_axis, y_axis, label='Top K='+str(sigma))
+        line, = plt.plot(x_axis, y_axis, label='[%.2f'%(accuracy.mean())+r'] $\delta$='+str(delta))
         plt.legend()
+        plt.grid()
         plt.xlim((0,1))
         plt.ylim((0,1))
         plt.gca().set_aspect("equal")
+    plt.title(r'Accuracy ($\tau$=%d)'%(args.tol))
+    plt.xlabel('sequence length')
+    plt.ylabel('accuracy')
     plt.show()
