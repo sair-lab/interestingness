@@ -46,7 +46,8 @@ if __name__ == "__main__":
     parser.add_argument("--result", type=str, default='results/result.txt', help="results file")
     parser.add_argument("--min-object", type=int, default=10, help="minimum object number")
     parser.add_argument("--resolution", type=int, default=100, help="the number of different sliding windows")
-    parser.add_argument("--sigma", type=float, default=2, help="top sigma*k interests")
+    parser.add_argument('--nargs-int-type', nargs='+', type=int)
+    parser.add_argument("--sigma", nargs='+', type=float, default=[1,2,3,5,10], help="top sigma*k interests")
     args = parser.parse_args(); print(args)
     
     source = np.loadtxt(args.source, dtype=int)
@@ -58,18 +59,20 @@ if __name__ == "__main__":
     accuracy = np.ones(args.resolution+1)
     frames = np.zeros(length, dtype=int)
     frames[source] = 1
-   
-    for idx in range(1, args.resolution+1):
-        detect, N = 0, idx*length//args.resolution
-        for obj in source:
-            K = max(10, args.sigma*frames[max(0,obj-N+1):obj+1].sum())
-            if detected(N, K, obj) is True:
-                detect += 1
-        accuracy[idx] = detect/objects
 
-    x_axis, y_axis = np.array(range(args.resolution+1))/args.resolution, accuracy
-    plt.plot(x_axis, y_axis)
-    plt.xlim((0,1))
-    plt.ylim((0,1))
-    plt.gca().set_aspect("equal")
+    for sigma in args.sigma:
+        for idx in range(1, args.resolution+1):
+            detect, N = 0, idx*length//args.resolution
+            for obj in source:
+                K = max(10, int(frames[max(0,obj-N+1):obj+1].sum()*sigma))
+                if detected(N, K, obj) is True:
+                    detect += 1
+            accuracy[idx] = detect/objects
+
+        x_axis, y_axis = np.array(range(args.resolution+1))/args.resolution, accuracy
+        line, = plt.plot(x_axis, y_axis, label='Top K='+str(sigma))
+        plt.legend()
+        plt.xlim((0,1))
+        plt.ylim((0,1))
+        plt.gca().set_aspect("equal")
     plt.show()
