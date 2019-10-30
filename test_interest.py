@@ -56,12 +56,18 @@ class Interest():
     '''
     Maintain top K interests
     '''
-    def __init__(self, K):
+    def __init__(self, K, filename):
         self.K = K
         self.interests = []
+        self.filename = filename
+        f = open(self.filename, 'w')
+        f.close()
 
-    def add_interest(self, tensor, loss, visualize_window=None):
-        self.interests.append((loss, tensor))
+    def add_interest(self, tensor, loss, batch_idx, visualize_window=None):
+        f = open(self.filename, 'a+')
+        f.write("%d %f\n" % (batch_idx, loss))
+        f.close()
+        self.interests.append((loss, tensor, batch_idx))
         self.interests.sort(key=self._sort_loss, reverse=True)
         self._maintain()
         interests = np.concatenate([self.interests[i][1] for i in range(len(self.interests))], axis=1)
@@ -91,11 +97,10 @@ def performance(loader, net):
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
             frame = show_batch_box(inputs, batch_idx, loss.item())
-            if batch_idx > 10:
-                interest.add_interest(frame, loss, visualize_window='Top Interests')
+            interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
             # cv2.imwrite('images/interestingness-convmse-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
-            logger.add_scalar('loss', loss.item(), batch_idx)
+
     cv2.waitKey(0)
     return test_loss/(batch_idx+1)
 
@@ -133,19 +138,17 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.subt.interest.mse', help="learning rate")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.SubTF.interest.mse', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
-    parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
+    parser.add_argument("--num-interest", type=int, default=50, help='loss compute by grid')
     parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
-    parser.add_argument('--dataset', type=str, default='subTF', help='dataset type (subT ot drone')
+    parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
-
-    logger = SummaryWriter('runs/')
 
     transform = transforms.Compose([
             transforms.CenterCrop(args.crop_size),
@@ -155,17 +158,17 @@ if __name__ == "__main__":
 
     if args.dataset == 'drone':
         test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
-    elif args.dataset == 'subT':
+    elif args.dataset == 'SubT':
         test_data = SubT(root=args.data_root, train=False, transform=transform)
-    elif args.dataset == 'subTF':
-        test_data = SubTF(root=args.data_root, train=False, test_data=1, transform=transform)
+    elif args.dataset == 'SubTF':
+        test_data = SubTF(root=args.data_root, train=False, test_data=0, transform=transform)
 
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     net = torch.load(args.model_save)
     net.set_train(False)
 
-    interest = Interest(args.num_interest)
+    interest = Interest(args.num_interest, 'results/results-test.txt')
     if torch.cuda.is_available():
         net = net.cuda()
 

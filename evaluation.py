@@ -37,23 +37,22 @@ def detected(N, K, obj):
     window = np.sort(result[max(0,obj-N+1):obj+1,1])[::-1]
     if window.shape[0] < K or (result[max(0,obj-args.tol):min(obj+args.tol+1, length), 1] >= window[K-1]).sum()>0:
         return True
-    else:
-        return False
+    return False
 
 
 if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Evaluate Interestingness')
     parser.add_argument("--source", type=str, default='results/source.txt', help="ground-truth file")
-    parser.add_argument("--result", type=str, default='results/result.txt', help="results file")
-    parser.add_argument("--min-object", type=int, default=10, help="minimum object number")
-    parser.add_argument("--resolution", type=int, default=100, help="the number of different sliding windows")
-    parser.add_argument("--tol", type=int, default=1, help="the number of different sliding windows")
-    parser.add_argument("--delta", nargs='+', type=float, default=[1,2,4], help="top delta*k interests")
+    parser.add_argument("--target", type=str, default='results/result.txt', help="results file")
+    parser.add_argument("--min-object", type=int, default=10, help="minimum number of top interests")
+    parser.add_argument("--resolution", type=int, default=100, help="number of points of the plotted lines")
+    parser.add_argument("--tol", type=int, default=2, help="the maximum tolerant frames")
+    parser.add_argument("--delta", nargs='+', type=float, default=[1,2,4], help="top delta*K are accepted, where K is truth")
     args = parser.parse_args(); print(args)
     
     source = np.loadtxt(args.source, dtype=int)
-    result = np.loadtxt(args.result)
+    result = np.loadtxt(args.target)
     
     objects = source.shape[0]
     length = result.shape[0]
@@ -67,7 +66,7 @@ if __name__ == "__main__":
         for idx in range(1, args.resolution+1):
             detect, N = 0, idx*length//args.resolution
             for obj in source:
-                K = max(10, int(frames[max(0,obj-N+1):obj+1].sum()*delta))
+                K = max(args.min_object, int(frames[max(0,obj-N+1):obj+1].sum()*delta))
                 if detected(N, K, obj) is True:
                     detect += 1
             accuracy[idx] = detect/objects

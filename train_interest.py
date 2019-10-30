@@ -104,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
     parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
-    parser.add_argument("--epochs", type=int, default=5, help="number of training epochs")
+    parser.add_argument("--epochs", type=int, default=20, help="number of training epochs")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
@@ -112,13 +112,13 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--loss', type=str, default='mse', help='loss criterion')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
-    parser.add_argument('--dataset', type=str, default='subTF', help='dataset type (subT ot drone')
+    parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
     transform = transforms.Compose([
-            # transforms.RandomRotation(20),
+            transforms.RandomRotation(5),
             transforms.RandomCrop(args.crop_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
@@ -127,15 +127,15 @@ if __name__ == "__main__":
 
     if args.dataset == 'drone':
         train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
-    elif args.dataset == 'subT':
+    elif args.dataset == 'SubT':
         train_data = SubT(root=args.data_root, train=True, transform=transform)
-    elif args.dataset == 'subTF':
+    elif args.dataset == 'SubTF':
         train_data = SubTF(root=args.data_root, train=True, transform=transform)
 
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     net,_ = torch.load(args.model_save)
-    net = Interestingness(net, 4000, 512, 10, 10, 10, 10)
+    net = Interestingness(net, 2000, 512, 10, 10, 10, 10)
     net.set_train(True)
 
     if torch.cuda.is_available():
