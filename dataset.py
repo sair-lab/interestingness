@@ -172,7 +172,7 @@ class SubT(Dataset):
 
 class SubTF(Dataset):
     '''
-    The DARPA Subterranean (SubT) Challenge front camera data recorded by Team Exploer
+    The DARPA Subterranean (SubT) Challenge Front camera data recorded by Team Exploer
     args:
     root: dataset location (without subt-front)
     train: bool value
@@ -190,9 +190,9 @@ class SubTF(Dataset):
         super().__init__()
         self.transform, self.train = transform, train
         if train is True:
-            self.filenames = sorted(glob.glob(os.path.join(root, 'subt-front', 'train/*.png')))
+            self.filenames = sorted(glob.glob(os.path.join(root, 'SubTF', 'train/*.png')))
         else:
-            self.filenames = sorted(glob.glob(os.path.join(root, 'subt-front', self.data[test_data], '*.png')))
+            self.filenames = sorted(glob.glob(os.path.join(root, 'SubTF', self.data[test_data], '*.png')))
         self.nframes = len(self.filenames)
 
     def __len__(self):
@@ -217,32 +217,22 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
 
     transform = transforms.Compose([
-        transforms.CenterCrop(320),
+        # transforms.CenterCrop(320),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    # video = VideoData(root='/data/datasets/subt/tunnel-1/2019-08-20/ugv_0', file='front.mkv', transform=transform)
-    # loader = Data.DataLoader(dataset=video, batch_size=1, shuffle=False)
-    
-    # images = ImageData('dronefilm/unintrests', transform=transform)
-    # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
-
-    # images = Mavscout('/data/datasets', transform=transform)
-    # loader = Data.DataLoader(dataset=images, batch_size=1, shuffle=False)
-
+    # data = VideoData(root='/data/datasets/subt/tunnel-1/2019-08-20/ugv_0', file='front.mkv', transform=transform)
+    # data = ImageData('dronefilm/unintrests', transform=transform)
+    # data = Mavscout('/data/datasets', transform=transform)
     # data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
-    # loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
+    data = SubT(root="/data/datasets", data='tunnel-1', test='2019-08-18/ugv_1/front.mkv', train=False, transform=transform)
+    # data = SubTF(root="/data/datasets", train=True, test_data=0, transform=transform)
 
-    data = SubTF(root="/data/datasets", train=True, test_data=0, transform=transform)
     loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
-
     for batch_idx, frame in enumerate(loader):
-        # if batch_idx%15==0:
-            # save_batch(frame, '/data/datasets/dronefilm/bike/train/t1-', batch_idx)
-        # if batch_idx%30==0:
-            show_batch(frame, waitkey=300)
-            # cv2.imwrite('/data/datasets/subt/tunnel-0/train/0817ugv0-'+"%04d"%batch_idx+'.png', frame)
-            # save_batch(frame, '/data/datasets/subt/tunnel-1/2019-08-20/ugv_0/front/', batch_idx)
+        if batch_idx % 150 == 0:
+            save_batch(frame, '/data/datasets/SubTF/train/1181', batch_idx)
             # show_batch(frame)
             print(batch_idx)
+    print('Done.')
