@@ -48,7 +48,7 @@ from torchvision.datasets import CocoDetection
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, SubT, SubTF
+from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 
@@ -97,12 +97,11 @@ def performance(loader, net):
             test_loss += loss.item()
             image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
             frame = show_batch_box(inputs, batch_idx, loss.item())
-            interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
-            # cv2.imwrite('images/interestingness-convmse-%04d.png'%(batch_idx), 255*np.concatenate([frame, image], axis=1))
+            top_interests = interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
+            # cv2.imwrite('images/interestingness-%04d.png'%(batch_idx), 255*top_interests)
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
 
-    print('Done.')
-    cv2.waitKey(0)
+    cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
     return test_loss/(batch_idx+1)
 
 
@@ -142,11 +141,12 @@ if __name__ == "__main__":
     parser.add_argument("--model-save", type=str, default='saves/ae.pt.SubTF.interest.mse', help="learning rate")
     parser.add_argument("--data", type=str, default='car', help="training data name")
     parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
+    parser.add_argument("--test-data", type=int, default=0, help='test data ID.')
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
-    parser.add_argument("--num-interest", type=int, default=50, help='loss compute by grid')
+    parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
     parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
-    parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
+    parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (subT ot drone')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -157,19 +157,19 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    if args.dataset == 'drone':
-        test_data = Dronefilm(root=args.data_root, train=False,  data=args.data, test_id=0, transform=transform)
-    elif args.dataset == 'SubT':
-        test_data = SubT(root=args.data_root, train=False, transform=transform)
+    test_name = '%s-%d-%s.txt'%(args.dataset, args.test_data, time.strftime('%Y-%m-%d-%H:%M:%S'))
+
+    if args.dataset == 'DroneFilming':
+        test_data = DroneFilming(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
     elif args.dataset == 'SubTF':
-        test_data = SubTF(root=args.data_root, train=False, test_data=0, transform=transform)
+        test_data = SubTF(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
 
     test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
 
     net = torch.load(args.model_save)
     net.set_train(False)
 
-    interest = Interest(args.num_interest, 'results/results-test.txt')
+    interest = Interest(args.num_interest, 'results/%s.txt'%(test_name))
     if torch.cuda.is_available():
         net = net.cuda()
 
@@ -178,5 +178,5 @@ if __name__ == "__main__":
     fivecrop = FiveSplit2d(args.crop_size//2)
 
     print('number of parameters:', count_parameters(net))
-
     val_loss = performance(test_loader, net)
+    print('Done.')

@@ -42,7 +42,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, SubT, SubTF
+from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF
 from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--loss', type=str, default='mse', help='loss criterion')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
-    parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
+    parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (subT ot drone')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -125,10 +125,8 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    if args.dataset == 'drone':
-        train_data = Dronefilm(root=args.data_root, train=True,  data=args.data, transform=transform)
-    elif args.dataset == 'SubT':
-        train_data = SubT(root=args.data_root, train=True, transform=transform)
+    if args.dataset == 'DroneFilming':
+        train_data = DroneFilming(root=args.data_root, train=True, transform=transform)
     elif args.dataset == 'SubTF':
         train_data = SubTF(root=args.data_root, train=True, transform=transform)
 

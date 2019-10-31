@@ -135,6 +135,34 @@ class Dronefilm(Dataset):
         return frame
 
 
+class DroneFilming(Dataset):
+    '''
+    The Drone Filming data recorded by The Air Lab, CMU
+    args:
+    root: dataset location (without DroneFilming)
+    train: bool value
+    test_data: test_data id [0-5], ignored if train=True
+    '''
+    data = ['test0', 'test1', 'test2', 'test3', 'test4', 'test5']
+
+    def __init__(self, root, train=True, test_data=0, transform=None):
+        super().__init__()
+        self.transform, self.train = transform, train
+        if train is True:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'DroneFilming', 'train/*.png')))
+        else:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'DroneFilming', self.data[test_data], '*.png')))
+        self.nframes = len(self.filenames)
+
+    def __len__(self):
+        return self.nframes
+
+    def __getitem__(self, idx):
+        frame = Image.open(self.filenames[idx])
+        if self.transform is not None:
+            frame = self.transform(frame)
+        return frame
+
 
 class SubT(Dataset):
     '''
@@ -217,22 +245,22 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
 
     transform = transforms.Compose([
-        # transforms.CenterCrop(320),
+        transforms.CenterCrop(320),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    # data = VideoData(root='/data/datasets/subt/tunnel-1/2019-08-20/ugv_0', file='front.mkv', transform=transform)
+    data = VideoData(root='/data/datasets/DroneFilming/', file='test6.avi', transform=transform)
     # data = ImageData('dronefilm/unintrests', transform=transform)
     # data = Mavscout('/data/datasets', transform=transform)
-    # data = Dronefilm(root="/data/datasets", data='car', test_id=0, train=False, transform=transform)
-    data = SubT(root="/data/datasets", data='tunnel-1', test='2019-08-18/ugv_1/front.mkv', train=False, transform=transform)
+    # data = Dronefilm(root="/data/datasets", data='bike', test_id=2, train=False, transform=transform)
+    # data = SubT(root="/data/datasets", data='tunnel-1', test='2019-08-18/ugv_1/front.mkv', train=False, transform=transform)
     # data = SubTF(root="/data/datasets", train=True, test_data=0, transform=transform)
 
     loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
     for batch_idx, frame in enumerate(loader):
-        if batch_idx % 150 == 0:
-            save_batch(frame, '/data/datasets/SubTF/train/1181', batch_idx)
+        if batch_idx % 5 == 0:
+            save_batch(frame, '/data/datasets/DroneFilming/test6/', batch_idx/5)
             # show_batch(frame)
             print(batch_idx)
     print('Done.')
