@@ -392,4 +392,4 @@ def show_batch_origin(batch, name='video', waitkey=1):
     img = grid.numpy()[::-1].transpose((1, 2, 0))
     cv2.imshow(name, img)
     cv2.waitKey(waitkey)
-
+    return img

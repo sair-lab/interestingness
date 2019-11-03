@@ -50,7 +50,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF
 from interestingness import AE, VAE, AutoEncoder, Interestingness
-from torchutil import count_parameters, show_batch, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
+from torchutil import count_parameters, show_batch, show_batch_origin, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 
 class Interest():
     '''
@@ -93,12 +93,17 @@ def performance(loader, net):
                 inputs = inputs.cuda()
             inputs = Variable(inputs)
             outputs, loss = net(inputs)
-            drawbox(inputs, outputs)
+            if args.debug is not True:
+                drawbox(inputs, outputs)
             test_loss += loss.item()
-            image = show_batch(torch.cat([outputs, (outputs-inputs).abs()], dim=0), 'reconstruction')
             frame = show_batch_box(inputs, batch_idx, loss.item())
             top_interests = interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
-            # cv2.imwrite('images/interestingness-%04d.png'%(batch_idx), 255*top_interests)
+            if args.debug is True:
+                image = show_batch(torch.cat([outputs], dim=0), 'reconstruction')
+                recon = show_batch(torch.cat([(inputs-outputs).abs()], dim=0), 'difference')
+                cv2.imwrite('images/%s-%d/%s-interestingness-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), frame*255)
+                cv2.imwrite('images/%s-%d/%s-reconstruction-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), image*255)
+                cv2.imwrite('images/%s-%d/%s-difference-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), recon*255)
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
 
     cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
@@ -127,7 +132,7 @@ def show_batch_box(batch, batch_idx, loss, box_id=None):
         batch = torch.zeros(batch.size())
     grid = torchvision.utils.make_grid(batch).cpu()
     img = grid.numpy()[::-1].transpose((1, 2, 0))
-    box = boxbar(grid.size(-2), loss)
+    box = boxbar(grid.size(-2), loss, threshold=[])
     frame = np.hstack([img, box])
     cv2.imshow('interestingness', frame)
     cv2.waitKey(1)
@@ -138,18 +143,21 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.SubTF.interest.mse', help="learning rate")
-    parser.add_argument("--data", type=str, default='car', help="training data name")
-    parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.DroneFilming.interest.mse', help="learning rate")
     parser.add_argument("--test-data", type=int, default=0, help='test data ID.')
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
     parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
     parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (subT ot drone')
-    parser.set_defaults(self_loop=False)
+    parser.add_argument('--save-flag', type=str, default='interests', help='save name flat')
+    parser.add_argument('--debug', dest='debug', action='store_true')
+    parser.set_defaults(debug=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
+
+    if not os.path.exists('results'):
+        os.makedirs('results')
 
     transform = transforms.Compose([
             transforms.CenterCrop(args.crop_size),
@@ -157,14 +165,14 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    test_name = '%s-%d-%s.txt'%(args.dataset, args.test_data, time.strftime('%Y-%m-%d-%H:%M:%S'))
+    test_name = '%s-%d-%s-%s'%(args.dataset, args.test_data, time.strftime('%Y-%m-%d-%H:%M:%S'), args.save_flag)
 
     if args.dataset == 'DroneFilming':
         test_data = DroneFilming(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
     elif args.dataset == 'SubTF':
         test_data = SubTF(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
 
-    test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
     net = torch.load(args.model_save)
     net.set_train(False)

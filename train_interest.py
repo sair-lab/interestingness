@@ -112,13 +112,12 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--loss', type=str, default='mse', help='loss criterion')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
-    parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (subT ot drone')
-    parser.set_defaults(self_loop=False)
+    parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
     transform = transforms.Compose([
-            transforms.RandomRotation(5),
+            # transforms.RandomRotation(5),
             transforms.RandomCrop(args.crop_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
@@ -160,7 +159,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.'+args.dataset+'.interest.'+args.loss)
+            torch.save(net, args.model_save+'.'+args.dataset+'.interest.no_rotation.'+args.loss)
             best_loss = val_loss
             no_decrease = 0
                 

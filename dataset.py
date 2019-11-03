@@ -204,15 +204,15 @@ class SubTF(Dataset):
     args:
     root: dataset location (without subt-front)
     train: bool value
-    test_data: test_data id [0-7], ignored if train=True
+    test_data: test_data id [0-6], ignored if train=True
     '''
     data = ['0817-ugv0-tunnel0',
             '0817-ugv1-tunnel0',
-            '0821-ugv0-tunnel0',
-            '0821-ugv1-tunnel0',
             '0818-ugv0-tunnel1',
             '0818-ugv1-tunnel1',
-            '0820-ugv0-tunnel1']
+            '0820-ugv0-tunnel1',
+            '0821-ugv0-tunnel0',
+            '0821-ugv1-tunnel0']
 
     def __init__(self, root, train=True, test_data=0, transform=None):
         super().__init__()
