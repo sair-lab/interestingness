@@ -117,7 +117,6 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
 
     transform = transforms.Compose([
-            # transforms.RandomRotation(5),
             transforms.RandomCrop(args.crop_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),

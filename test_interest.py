@@ -159,6 +159,9 @@ if __name__ == "__main__":
     if not os.path.exists('results'):
         os.makedirs('results')
 
+    if args.debug is True and not os.path.exists('images/%s-%d'%(args.dataset,args.test_data)):
+        os.makedirs('images/%s-%d'%(args.dataset,args.test_data))
+
     transform = transforms.Compose([
             transforms.CenterCrop(args.crop_size),
             transforms.ToTensor(),
