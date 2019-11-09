@@ -34,19 +34,25 @@ from torchutil import CorrelationSimilarity, rolls2d
 
 class Memory(nn.Module):
     pi_2 = 3.14159/2
-    def __init__(self, N=2000, C=512, H=7, W=7, gamma=5):
+    def __init__(self, N=2000, C=512, H=7, W=7, rr=1, wr=1):
         """Initialize the Memory Tensors.
         N: Number of cubes in the memory.
         C: Channel of each cube in the memory
         H: Height of each cube in the memory
         W: Width of each cube in the memory
+        rr: reading rate [rr > 0] (\gamma_r in the paper)
+        wr: writing rate [wr > 0] (\gamma_w in the paper)
         """
         super(Memory, self).__init__()
-        self.N, self.C, self.H, self.W, self.gamma = N, C, H, W, gamma
+        self.N, self.C, self.H, self.W = N, C, H, W
+        self.set_learning_rate(rr, wr)
         self.register_buffer('memory', torch.zeros(N, C, H, W))
         nn.init.kaiming_uniform_(self.memory)
         self._normalize_memory()
         self.similarity = CorrelationSimilarity((H,W))
+
+    def set_learning_rate(self, rr, wr):
+        self.rr, self.wr = rr, wr
 
     def size(self):
         return self.memory.size()
@@ -67,13 +73,13 @@ class Memory(nn.Module):
 
     def _correlation_address(self, key):
         w, trans = self.similarity(key, self.memory)
-        w = F.softmax(self._tan(w*self.pi_2), dim=1)
+        w = F.softmax((w*self.pi_2).tan()*self.rr, dim=1)
         return w.view(-1, self.N, 1, 1, 1), trans
 
     def _address(self, key):
         key = key.view(key.size(0), 1, -1)
         memory = self.memory.view(self.N, -1)
-        w = F.softmax(self._tan(F.cosine_similarity(memory, key, dim=-1)*self.pi_2), dim=1)
+        w = F.softmax((F.cosine_similarity(memory, key, dim=-1)*self.pi_2).tan()*self.wr, dim=1)
         return w.view(-1, self.N, 1, 1, 1)
 
     def _normalize_memory(self):
@@ -82,11 +88,6 @@ class Memory(nn.Module):
     def _normalize(self, x):
         return x
 
-    def _tan(self, x):
-        tanx, y = x.tan(), self.gamma*x
-        index = y.abs() > tanx.abs()
-        tanx[index] = y[index]
-        return tanx
 
 if __name__ == "__main__":
     from torch.utils.tensorboard import SummaryWriter
