@@ -151,6 +151,8 @@ if __name__ == "__main__":
     parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
     parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (subT ot drone')
     parser.add_argument('--save-flag', type=str, default='interests', help='save name flat')
+    parser.add_argument("--rr", type=float, default=1, help="reading rate")
+    parser.add_argument("--wr", type=float, default=1, help="reading rate")
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.set_defaults(debug=False)
     args = parser.parse_args(); print(args)
@@ -179,6 +181,7 @@ if __name__ == "__main__":
 
     net = torch.load(args.model_save)
     net.set_train(False)
+    net.memory.set_learning_rate(rr=args.rr, wr=args.wr)
 
     interest = Interest(args.num_interest, 'results/%s.txt'%(test_name))
     if torch.cuda.is_available():
