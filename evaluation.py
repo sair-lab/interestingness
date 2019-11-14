@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--target", type=str, help="results file")
     parser.add_argument("--min-object", type=int, default=10, help="minimum number of top interests")
     parser.add_argument("--resolution", type=int, default=100, help="number of points of the plotted lines")
-    parser.add_argument("--tol", type=int, default=2, help="the maximum tolerant frames")
+    parser.add_argument("--tol", type=int, default=1, help="the maximum tolerant frames")
     parser.add_argument("--delta", nargs='+', type=float, default=[1,2,4], help="top delta*K are accepted, where K is truth")
     args = parser.parse_args(); print(args)
     
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         plt.xlim((0,1))
         plt.ylim((0,1))
         plt.gca().set_aspect("equal")
-
+    print("Accuracy:",mean)
     plt.title(r'Accuracy ($\tau$=%d)'%(args.tol))
     plt.xlabel('sequence length')
     plt.ylabel('accuracy')

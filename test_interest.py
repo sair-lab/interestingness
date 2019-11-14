@@ -48,7 +48,7 @@ from torchvision.datasets import CocoDetection
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF
+from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF, PersonalVideo
 from interestingness import AE, VAE, AutoEncoder, Interestingness
 from torchutil import count_parameters, show_batch, show_batch_origin, ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
     parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
-    parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (subT ot drone')
+    parser.add_argument('--dataset', type=str, default='PersonalVideo', help='dataset type (subT ot drone')
     parser.add_argument('--save-flag', type=str, default='interests', help='save name flat')
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
     parser.add_argument("--wr", type=float, default=5, help="reading rate")
@@ -165,7 +165,8 @@ if __name__ == "__main__":
         os.makedirs('images/%s-%d'%(args.dataset,args.test_data))
 
     transform = transforms.Compose([
-            transforms.CenterCrop(args.crop_size),
+            # transforms.CenterCrop(args.crop_size),
+            transforms.Resize((args.crop_size,args.crop_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
@@ -176,6 +177,8 @@ if __name__ == "__main__":
         test_data = DroneFilming(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
     elif args.dataset == 'SubTF':
         test_data = SubTF(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
+    elif args.dataset == 'PersonalVideo':
+        test_data = PersonalVideo(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
 
     test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 

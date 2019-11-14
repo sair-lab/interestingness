@@ -233,6 +233,39 @@ class SubTF(Dataset):
         return frame
 
 
+class PersonalVideo(Dataset):
+    '''
+    The Personal Video Dataset
+    '''
+    data = ['00006_divx',
+            '00007_divx',
+            '00016_sea_divx',
+            '00018_sea_divx',
+            '00018_sea_divx24000',
+            '00019_divx',
+            '00043_t_divx',
+            'selfwalk_divx',
+            'snowresort_divx']
+
+    def __init__(self, root,  train=True, test_data=0, transform=None):
+        super().__init__()
+        self.transform = transform
+        if train is True:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'PersonalVideo', 'train/*.png')))
+        else:
+            self.filenames = sorted(glob.glob(os.path.join(root, 'PersonalVideo', self.data[test_data], '*.png')))
+        self.nframes = len(self.filenames)
+
+    def __len__(self):
+        return self.nframes
+
+    def __getitem__(self, idx):
+        frame = Image.open(self.filenames[idx])
+        if self.transform is not None:
+            frame = self.transform(frame)
+        return frame
+
+
 def save_batch(batch, folder, batch_idx):
     torchvision.utils.save_image(batch, folder+"%06d"%batch_idx+'.png')
 
@@ -245,22 +278,23 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
 
     transform = transforms.Compose([
-        transforms.CenterCrop(320),
+        transforms.Resize((320,320)),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-    data = VideoData(root='/data/datasets/DroneFilming/', file='test6.avi', transform=transform)
+    data = VideoData(root='/data/datasets/PersonalVideo/', file='snowresort_divx.avi', transform=transform)
     # data = ImageData('dronefilm/unintrests', transform=transform)
     # data = Mavscout('/data/datasets', transform=transform)
     # data = Dronefilm(root="/data/datasets", data='bike', test_id=2, train=False, transform=transform)
     # data = SubT(root="/data/datasets", data='tunnel-1', test='2019-08-18/ugv_1/front.mkv', train=False, transform=transform)
     # data = SubTF(root="/data/datasets", train=True, test_data=0, transform=transform)
+    # data = PersonalVideo(root="/data/datasets", test_data=0, transform=transform)
 
     loader = Data.DataLoader(dataset=data, batch_size=1, shuffle=False)
     for batch_idx, frame in enumerate(loader):
-        if batch_idx % 5 == 0:
-            save_batch(frame, '/data/datasets/DroneFilming/test6/', batch_idx/5)
-            # show_batch(frame)
+        if batch_idx % 300 == 0:
+            save_batch(frame, '/data/datasets/PersonalVideo/train/snowresort_divx-', batch_idx/30)
+        # show_batch(frame)
             print(batch_idx)
     print('Done.')

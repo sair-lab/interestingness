@@ -42,7 +42,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF
+from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF, PersonalVideo
 from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
@@ -127,6 +127,8 @@ if __name__ == "__main__":
         train_data = DroneFilming(root=args.data_root, train=True, transform=transform)
     elif args.dataset == 'SubTF':
         train_data = SubTF(root=args.data_root, train=True, transform=transform)
+    elif args.dataset == 'PersonalVideo':
+        train_data = PersonalVideo(root=args.data_root, train=True, transform=transform)
 
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
@@ -158,7 +160,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.'+args.dataset+'.interest.no_rotation.'+args.loss)
+            torch.save(net, args.model_save+'.'+args.dataset+'.interest.'+args.loss)
             best_loss = val_loss
             no_decrease = 0
                 
