@@ -26,6 +26,7 @@
 # DAMAGE.
 
 import cv2
+import time
 import math
 import torch
 import random
@@ -50,6 +51,54 @@ _single = _ntuple(1)
 _pair = _ntuple(2)
 _triple = _ntuple(3)
 _quadruple = _ntuple(4)
+
+
+class Timer:
+    def __init__(self):
+        self.start_time = time.time()
+
+    def tic(self):
+        self.start()
+
+    def show(self, prefix="", output=True):
+        duration = time.time()-self.start_time
+        if output:
+            print(prefix+"%fs" % duration)
+        return duration
+
+    def toc(self, prefix=""):
+        self.end()
+        print(prefix+"%fs = %fHz" % (self.duration, 1/self.duration))
+        return self.duration
+
+    def start(self):
+        torch.cuda.synchronize()
+        self.start_time = time.time()
+
+    def end(self):
+        torch.cuda.synchronize()
+        self.duration = time.time()-self.start_time
+        self.start()
+        return self.duration
+
+
+class MovAvg(nn.Module):
+    def __init__(self, window_size=3):
+        super(MovAvg, self).__init__()
+        assert(window_size>=1)
+        self.window_size = window_size
+        weight = torch.arange(1, window_size+1).type('torch.FloatTensor')
+        self.register_buffer('weight', torch.zeros(1,1,window_size))
+        self.weight.data = (weight/weight.sum()).view(1,1,-1)
+        self.nums = []
+
+    def append(self, point):
+        if len(self.nums) == 0:
+            self.nums = [point]*self.window_size
+        else:
+            self.nums.append(point)
+            self.nums.pop(0)
+        return F.conv1d(torch.tensor(self.nums, dtype=torch.float).view(1,1,-1), self.weight).view(-1)
 
 
 class ConvLoss(nn.Module):
