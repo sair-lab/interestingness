@@ -28,7 +28,6 @@
 import os
 import cv2
 import glob
-import glob2
 import torch
 import argparse
 import numpy as np
@@ -37,7 +36,6 @@ from PIL import Image
 from random import sample
 from operator import itemgetter
 import torch.utils.data as Data
-from matplotlib import pyplot as plt
 from torchvision import transforms, utils
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader

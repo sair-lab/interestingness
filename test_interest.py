@@ -41,11 +41,9 @@ from torchvision import models
 import torch.utils.data as Data
 from torch.autograd import Variable
 from torch.nn import functional as F
-from matplotlib import pyplot as plt
 from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
-from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from interestingness import AE, VAE, AutoEncoder, Interestingness
@@ -97,7 +95,7 @@ def performance(loader, net):
             outputs, loss = net(inputs)
             loss = movavg.append(loss)
             time_use += timer.end()
-            if args.debug is True:
+            if args.drawbox is True:
                 drawbox(inputs, outputs)
             test_loss += loss.item()
             frame = show_batch_box(inputs, batch_idx, loss.item())
@@ -109,12 +107,12 @@ def performance(loader, net):
                 cv2.imwrite('images/%s-%d/%s-reconstruction-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), image*255)
                 cv2.imwrite('images/%s-%d/%s-difference-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), recon*255)
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
-    print("Total time using: %fs, %fms/frame"%(time_use, 1000*time_use/(batch_idx+1)))
+    print("Total time using: %.2f seconds, %.2f ms/frame"%(time_use, 1000*time_use/(batch_idx+1)))
     cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
     return test_loss/(batch_idx+1)
 
 
-def boxbar(height, bar, ranges=[0.04, 0.08], threshold=[0.05, 0.06]):
+def boxbar(height, bar, ranges=[0.02, 0.08], threshold=[0.05, 0.06]):
     width = 15
     box = np.zeros((height,width,3), np.uint8)
     x1, y1 = 0, int((1.0-(bar-ranges[0])/(ranges[1]-ranges[0]))*height)
@@ -148,18 +146,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/ae.pt.DroneFilming.interest.mse', help="read model")
-    parser.add_argument("--test-data", type=int, default=0, help='test data ID.')
+    parser.add_argument("--test-data", type=int, default=2, help='test data ID.')
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
-    parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
+    parser.add_argument("--crop-size", type=int, default=320, help='crop size')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
-    parser.add_argument("--skip-frames", type=int, default=1, help='skip frame')
-    parser.add_argument("--window-size", type=int, default=1, help='smooth window size >=1')
+    parser.add_argument("--skip-frames", type=int, default=1, help='number of skip frame')
+    parser.add_argument("--window-size", type=int, default=3, help='smooth window size >=1')
     parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (SubTF, DroneFilming, or PersonalVideo')
-    parser.add_argument('--save-flag', type=str, default='interests', help='save name flat')
+    parser.add_argument('--save-flag', type=str, default='interests', help='save name flag')
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
-    parser.add_argument("--wr", type=float, default=5, help="reading rate")
+    parser.add_argument("--wr", type=float, default=5, help="writing rate")
     parser.add_argument('--debug', dest='debug', action='store_true')
+    parser.add_argument('--drawbox', dest='drawbox', action='store_true')
     parser.set_defaults(debug=False)
+    parser.set_defaults(drawbox=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
