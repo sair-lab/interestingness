@@ -151,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("--crop-size", type=int, default=320, help='crop size')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
     parser.add_argument("--skip-frames", type=int, default=1, help='number of skip frame')
-    parser.add_argument("--window-size", type=int, default=3, help='smooth window size >=1')
+    parser.add_argument("--window-size", type=int, default=1, help='smooth window size >=1')
     parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (SubTF, DroneFilming, or PersonalVideo')
     parser.add_argument('--save-flag', type=str, default='interests', help='save name flag')
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
