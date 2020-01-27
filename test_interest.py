@@ -29,7 +29,6 @@ import os
 import cv2
 import copy
 import time
-import tqdm
 import torch
 import os.path
 import argparse
