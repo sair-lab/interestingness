@@ -43,8 +43,8 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from interestingness import AE, VAE
-from torchutil import RandomMotionBlur, EarlyStopScheduler
+from .interestingness import AE, VAE
+from .torchutil import RandomMotionBlur, EarlyStopScheduler
 
 def train(loader, net):
     train_loss, batches = 0, len(loader)
