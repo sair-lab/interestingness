@@ -29,7 +29,7 @@ import os
 import cv2
 import copy
 import time
-import tqdm
+import math
 import torch
 import os.path
 import argparse
@@ -116,6 +116,12 @@ def boxbar(height, bar, ranges=[0.02, 0.08], threshold=[0.05, 0.06]):
     width = 15
     box = np.zeros((height,width,3), np.uint8)
     x1, y1 = 0, int((1.0-(bar-ranges[0])/(ranges[1]-ranges[0]))*height)
+
+    #  for visulization, stretch height of bar
+    h = min(max(0,(bar-ranges[0])/(ranges[1]-ranges[0])),1)
+    h = (np.tanh(np.tan(math.pi/2*(2*h-1))-0.8)+1)/2
+    y1 = int((1-h)*height)
+
     x2, y2 = int(width), int(height)
     cv2.rectangle(box,(x1,y1),(x2,y2),(0,1,0),-1)
     for i in threshold:
