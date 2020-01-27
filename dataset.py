@@ -40,7 +40,7 @@ from torchvision import transforms, utils
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 
-from .torchutil import show_batch
+from torchutil import show_batch
 
 class VideoData(Dataset):
     def __init__(self, root, file, transform=None):

@@ -41,9 +41,9 @@ from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
-from .memory import Memory
-from .coder import Encoder, Decoder, LogVar
-from .torchutil import Split2d, Merge2d, CosineSimilarity
+from memory import Memory
+from coder import Encoder, Decoder, LogVar
+from torchutil import Split2d, Merge2d, CosineSimilarity
 
 class AE(nn.Module):
     def __init__(self):

@@ -33,7 +33,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 
-from .evaluation import evaluate
+from evaluation import evaluate
 
 # file0 = ['/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-Hongbiao.txt',
 #          '/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-yuheng.txt',

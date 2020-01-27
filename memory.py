@@ -29,7 +29,7 @@ import torch
 import numpy as np
 from torch import nn
 import torch.nn.functional as F
-from .torchutil import CorrelationSimilarity, rolls2d
+from torchutil import CorrelationSimilarity, rolls2d
 
 
 class Memory(nn.Module):
