@@ -42,9 +42,9 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF, PersonalVideo
-from interestingness import AE, VAE, Interestingness
-from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
+from .dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF, PersonalVideo
+from .interestingness import AE, VAE, Interestingness
+from .torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
 
 def train(loader, net):
