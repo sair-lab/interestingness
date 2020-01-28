@@ -131,7 +131,7 @@ def boxbar(height, bar, ranges=[0.02, 0.08], threshold=[0.05, 0.06]):
     return box
 
 
-def show_batch_box(batch, batch_idx, loss, box_id=None):
+def show_batch_box(batch, batch_idx, loss, box_id=None, show_now=True):
     min_v = torch.min(batch)
     range_v = torch.max(batch) - min_v
     if range_v > 0:
@@ -142,8 +142,9 @@ def show_batch_box(batch, batch_idx, loss, box_id=None):
     img = grid.numpy()[::-1].transpose((1, 2, 0))
     box = boxbar(grid.size(-2), loss, threshold=[])
     frame = np.hstack([img, box])
-    cv2.imshow('interestingness', frame)
-    cv2.waitKey(1)
+    if show_now:
+        cv2.imshow('interestingness', frame)
+        cv2.waitKey(1)
     return frame
 
 

@@ -38,6 +38,7 @@ from itertools import repeat
 from torch import rfft, irfft
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
 
 
 def _ntuple(n):
@@ -202,6 +203,19 @@ class Merge2d(nn.Module):
     def forward(self, x):
         output = x.view(-1, (self.H//self.h)*(self.W//self.w), x.size(1)*self.h*self.w)
         return self.fold( output.permute(0,2,1).contiguous())
+
+
+class VerticalFlip(object):
+    """Vertically flip the given PIL Image.
+    """
+    def __init__(self):
+        pass
+
+    def __call__(self, img):
+        return TF.vflip(img)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '()'
 
 
 class RandomMotionBlur(object):
