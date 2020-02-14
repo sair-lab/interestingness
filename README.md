@@ -1,4 +1,4 @@
-## Visual Memorability for Interestingness via Unsupervised Online Learning
+## Go to [Github Page](https://github.com/wang-chen/interestingness)
 
 ### You may watch the following video to catch the idea of this work.
 
