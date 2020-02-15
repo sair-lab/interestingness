@@ -49,24 +49,6 @@ from interestingness import AE, VAE, Interestingness
 from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
 
 
-def train(loader, net):
-    train_loss, batches = 0, len(loader)
-    enumerater = tqdm.tqdm(enumerate(loader))
-    for batch_idx, inputs in enumerater:
-        if torch.cuda.is_available():
-            inputs = inputs.cuda()
-        optimizer.zero_grad()
-        inputs = Variable(inputs)
-        outputs = net(inputs)
-        loss = criterion(outputs, inputs)
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-        enumerater.set_description("train loss: %.4f on %d/%d"%(train_loss/(batch_idx+1), batch_idx, batches))
-
-    return train_loss/(batch_idx+1)
-
-
 def performance(loader, net):
     test_loss = 0
     with torch.no_grad():
