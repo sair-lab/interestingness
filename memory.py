@@ -47,7 +47,8 @@ class Memory(nn.Module):
         self.N, self.C, self.H, self.W = N, C, H, W
         self.set_learning_rate(rr, wr)
         self.register_buffer('memory', torch.zeros(N, C, H, W))
-        nn.init.kaiming_uniform_(self.memory)
+        # nn.init.kaiming_uniform_(self.memory)
+        torch.nn.init.normal_(self.memory, 0.05, 0.027).relu_()
         self._normalize_memory()
         self.similarity = CorrelationSimilarity((H,W))
 
