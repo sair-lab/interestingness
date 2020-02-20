@@ -72,8 +72,10 @@ class Memory(nn.Module):
         self._normalize_memory()
 
     def _correlation_address(self, key):
-        w, trans = self.similarity(key, self.memory)
-        w = F.softmax((w*self.pi_2).tan()*self.rr, dim=1)
+        # self.rw: reading weights, saved for human interaction package
+        # Go https://github.com/wang-chen/interaction.git
+        self.rw, trans = self.similarity(key, self.memory)
+        w = F.softmax((self.rw*self.pi_2).tan()*self.rr, dim=1)
         return w.view(-1, self.N, 1, 1, 1), trans
 
     def _address(self, key):
@@ -90,6 +92,9 @@ class Memory(nn.Module):
 
 
 if __name__ == "__main__":
+    '''
+    Memory Tests
+    '''
     from torch.utils.tensorboard import SummaryWriter
     import time
     logger =  SummaryWriter('runs/memory-'+str(time.time()))
