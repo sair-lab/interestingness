@@ -98,9 +98,9 @@ if __name__ == "__main__":
     parser.add_argument("--delta", nargs='+', type=float, default=[1,2,4], help="top delta*K are accepted, where K is truth")
     args = parser.parse_args(); print(args)
 
-    if args.category is 'interest-1':
+    if args.category == 'interest-1':
         sources = interest1
-    elif args.category is 'interest-2':
+    elif args.category == 'interest-2':
         sources = interest2
     else:
         NotImplementedError('please select interest-1 or interest-2')
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         plt.ylim((0,1))
         plt.gca().set_aspect("equal")
 
-    plt.title(r'Accuracy ($\tau$=%d)'%(args.tol))
+    plt.title(r'Curve of Real-time Precision ($\tau$=%d)'%(args.tol))
     plt.xlabel('sequence length')
     plt.ylabel('accuracy')
     plt.show()
