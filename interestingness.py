@@ -103,9 +103,9 @@ class Interestingness(nn.Module):
             output = self.ae.decoder(states)
             return output
         else:
-            # self.states, saved for human interaction package
+            # self.coding, self.states, saved for human interaction package
             # Go https://github.com/wang-chen/interaction.git
-            self.states = self.memory.read(coding)
+            self.states, self.coding = self.memory.read(coding), coding
             self.memory.write(coding)
             states = self.merge2d(self.states)
             output = self.ae.decoder(states)
