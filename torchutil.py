@@ -218,6 +218,19 @@ class VerticalFlip(object):
         return self.__class__.__name__ + '()'
 
 
+class HorizontalFlip(object):
+    """Horizontally flip the given PIL Image.
+    """
+    def __init__(self):
+        pass
+
+    def __call__(self, img):
+        return TF.hflip(img)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '()'
+
+
 class RandomMotionBlur(object):
     def __init__(self, p=[0.7, 0.2, 0.1]):
         self.p = p

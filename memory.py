@@ -64,13 +64,14 @@ class Memory(nn.Module):
         memory = rolls2d(self.memory, -trans)
         return torch.sum(w * memory, dim=1)
 
-    def write(self, key):
-        key = self._normalize(key)
-        w = self._address(key)
-        memory = (1 - w) * self.memory.data
-        knowledge = w * key.unsqueeze(1)
-        self.memory.data = (memory + knowledge).mean(0)
-        self._normalize_memory()
+    def write(self, keys):
+        for i in range(keys.size(0)):
+            key = self._normalize(keys[i]).unsqueeze(0)
+            w = self._address(key)
+            memory = (1 - w) * self.memory.data
+            knowledge = w * key.unsqueeze(1)
+            self.memory.data = (memory + knowledge).mean(0)
+            self._normalize_memory()
 
     def _correlation_address(self, key):
         # self.rw: reading weights, saved for human interaction package
