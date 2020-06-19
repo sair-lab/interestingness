@@ -33,7 +33,7 @@
       # This requires a long time for training on single GPU.
       # Create a folder "saves" manually and a model named "ae.pt" will be saved.
 
-* You may skip this step, if you download the pre-trained [at.pt](link).
+* You may skip this step, if you download the pre-trained [at.pt](https://github.com/wang-chen/interestingness/releases/download/v1.0/ae.pt) into folder "saves".
 
 
 ## Short-term Learning
@@ -59,7 +59,7 @@
       # This will read the previous model "ae.pt".
       # A new model "ae.pt.SubTF.n1000.mse" will be generated.
  
-* You may skip this step, if you download the pre-trained [ae.pt.SubTF.n1000.mse](link).
+* You may skip this step, if you download the pre-trained [ae.pt.SubTF.n1000.mse](https://github.com/wang-chen/interestingness/releases/download/v1.0/ae.pt.SubTF.n1000.mse) into folder "saves".
  
  
  ## On-line Learning
@@ -71,13 +71,13 @@
          # --test-data The sequence ID in the dataset SubTF, [0-6] is avaiable
          # This will read the trained model "ae.pt.SubTF.n1000.mse" from short-term learning.
          
- * For convenience, you may run
+ * Alternatively, you may test all sequences by running
  
          bash test.sh
  
- * This will generate results files in folder "results", that is compatible with evaluation tools in [SubT](https://github.com/wang-chen/SubT.git)
+ * This will generate results files in folder "results".
 
- * You may skip this step, if you download our generated [results](link).
+ * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness/releases/download/v1.0/results.zip).
 
 
 # Evaluation
