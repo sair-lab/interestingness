@@ -35,59 +35,11 @@ from matplotlib.pyplot import figure
 
 from evaluation import evaluate
 
-# file0 = ['/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-Hongbiao.txt',
-#          '/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-yuheng.txt',
-#          "/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-weikun.txt"]
-
-# file1 = ["/data/datasets/SubTF/ground-truth/0817-ugv1-tunnel0-Hongbiao.txt",
-#          "/data/datasets/SubTF/ground-truth/0817-ugv1-tunnel0-Huai.txt",
-#          "/data/datasets/SubTF/ground-truth/0817-ugv1-tunnel0-yuheng.txt"]
-
-# file2 = ['/data/datasets/SubTF/ground-truth/0818-ugv0-tunnel1-Hongbiao.txt',
-#          "/data/datasets/SubTF/ground-truth/0818-ugv0-tunnel1-Junjun.txt",
-#          '/data/datasets/SubTF/ground-truth/0818-ugv0-tunnel1-huai.txt']
-
-# file3 = ["/data/datasets/SubTF/ground-truth/0818-ugv1-tunnel1-Hongbiao.txt",
-#          "/data/datasets/SubTF/ground-truth/0818-ugv1-tunnel1-yaoyuh.txt",
-#          "/data/datasets/SubTF/ground-truth/0818-ugv1-tunnel1-yuheng.txt"]
-
-# file4 = ['/data/datasets/SubTF/ground-truth/0820-ugv0-tunnel1-Hongbiao.txt',
-#          "/data/datasets/SubTF/ground-truth/0820-ugv0-tunnel1-shibo.txt",
-#          "/data/datasets/SubTF/ground-truth/0820-ugv0-tunnel1-yaoyuh.txt"]
-
-# file5 = ["/data/datasets/SubTF/ground-truth/0821-ugv0-tunnel0-Huai.txt",
-#          "/data/datasets/SubTF/ground-truth/0821-ugv0-tunnel0-shibo.txt",
-#          "/data/datasets/SubTF/ground-truth/0821-ugv0-tunnel0-yaoyuh.txt"]
-
-# file6 = ["/data/datasets/SubTF/ground-truth/0821-ugv1-tunnel0-Hongbiao.txt",
-#          "/data/datasets/SubTF/ground-truth/0821-ugv1-tunnel0-shibo.txt",
-#          "/data/datasets/SubTF/ground-truth/0821-ugv1-tunnel0-yaoyuh.txt"]
-
-# interest1 ground truth
-file0 = ['/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-interest-1.txt']
-file1 = ["/data/datasets/SubTF/ground-truth/0817-ugv1-tunnel0-interest-1.txt"]
-file2 = ['/data/datasets/SubTF/ground-truth/0818-ugv0-tunnel1-interest-1.txt']
-file3 = ["/data/datasets/SubTF/ground-truth/0818-ugv1-tunnel1-interest-1.txt"]
-file4 = ['/data/datasets/SubTF/ground-truth/0820-ugv0-tunnel1-interest-1.txt']
-file5 = ["/data/datasets/SubTF/ground-truth/0821-ugv0-tunnel0-interest-1.txt"]
-file6 = ["/data/datasets/SubTF/ground-truth/0821-ugv1-tunnel0-interest-1.txt"]
-interest1 = [file0, file1, file2, file3, file4, file5, file6]
-
-# interest2 ground truth
-file0 = ['/data/datasets/SubTF/ground-truth/0817-ugv0-tunnel0-interest-2.txt']
-file1 = ["/data/datasets/SubTF/ground-truth/0817-ugv1-tunnel0-interest-2.txt"]
-file2 = ['/data/datasets/SubTF/ground-truth/0818-ugv0-tunnel1-interest-2.txt']
-file3 = ["/data/datasets/SubTF/ground-truth/0818-ugv1-tunnel1-interest-2.txt"]
-file4 = ['/data/datasets/SubTF/ground-truth/0820-ugv0-tunnel1-interest-2.txt']
-file5 = ["/data/datasets/SubTF/ground-truth/0821-ugv0-tunnel0-interest-2.txt"]
-file6 = ["/data/datasets/SubTF/ground-truth/0821-ugv1-tunnel0-interest-2.txt"]
-interest2 = [file0, file1, file2, file3, file4, file5, file6]
-
-# from personalvideo import *
 
 if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Evaluate Interestingness')
+    parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--dataset", type=str, default='SubTF', help="file save flag name")
     parser.add_argument("--save-flag", type=str, default='r5w5', help="file save flag name")
     parser.add_argument('--root', type=str, default='results', help='results folder')
@@ -97,6 +49,28 @@ if __name__ == "__main__":
     parser.add_argument("--category", type=str, default='interest-1', help="interest-1 or interest-2")
     parser.add_argument("--delta", nargs='+', type=float, default=[1,2,4], help="top delta*K are accepted, where K is truth")
     args = parser.parse_args(); print(args)
+
+    # interest1 ground truth
+    file0 = [args.data_root+"/SubTF/ground-truth/0817-ugv0-tunnel0-interest-1.txt"]
+    file1 = [args.data_root+"/SubTF/ground-truth/0817-ugv1-tunnel0-interest-1.txt"]
+    file2 = [args.data_root+"/SubTF/ground-truth/0818-ugv0-tunnel1-interest-1.txt"]
+    file3 = [args.data_root+"/SubTF/ground-truth/0818-ugv1-tunnel1-interest-1.txt"]
+    file4 = [args.data_root+"/SubTF/ground-truth/0820-ugv0-tunnel1-interest-1.txt"]
+    file5 = [args.data_root+"/SubTF/ground-truth/0821-ugv0-tunnel0-interest-1.txt"]
+    file6 = [args.data_root+"/SubTF/ground-truth/0821-ugv1-tunnel0-interest-1.txt"]
+    interest1 = [file0, file1, file2, file3, file4, file5, file6]
+
+    # interest2 ground truth
+    file0 = [args.data_root+'/SubTF/ground-truth/0817-ugv0-tunnel0-interest-2.txt']
+    file1 = [args.data_root+"/SubTF/ground-truth/0817-ugv1-tunnel0-interest-2.txt"]
+    file2 = [args.data_root+"/SubTF/ground-truth/0818-ugv0-tunnel1-interest-2.txt"]
+    file3 = [args.data_root+"/SubTF/ground-truth/0818-ugv1-tunnel1-interest-2.txt"]
+    file4 = [args.data_root+"/SubTF/ground-truth/0820-ugv0-tunnel1-interest-2.txt"]
+    file5 = [args.data_root+"/SubTF/ground-truth/0821-ugv0-tunnel0-interest-2.txt"]
+    file6 = [args.data_root+"/SubTF/ground-truth/0821-ugv1-tunnel0-interest-2.txt"]
+    interest2 = [file0, file1, file2, file3, file4, file5, file6]
+
+    os.makedirs("performance", exist_ok=True)
 
     if args.category == 'interest-1':
         sources = interest1

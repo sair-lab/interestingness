@@ -104,6 +104,7 @@ if __name__ == "__main__":
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
+    os.makedirs("saves", exist_ok=True)
     with open(args.model_save+'.txt','a+') as f:
         f.write(str(args)+'\n')
 

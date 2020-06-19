@@ -154,15 +154,15 @@ if __name__ == "__main__":
     # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.DroneFilming.interest.mse', help="read model")
+    parser.add_argument("--model-save", type=str, default='saves/ae.pt.SubTF.n1000.mse', help="read model")
     parser.add_argument("--test-data", type=int, default=2, help='test data ID.')
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='crop size')
     parser.add_argument("--num-interest", type=int, default=10, help='loss compute by grid')
     parser.add_argument("--skip-frames", type=int, default=1, help='number of skip frame')
     parser.add_argument("--window-size", type=int, default=1, help='smooth window size >=1')
-    parser.add_argument('--dataset', type=str, default='DroneFilming', help='dataset type (SubTF, DroneFilming, or PersonalVideo')
-    parser.add_argument('--save-flag', type=str, default='interests', help='save name flag')
+    parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (SubTF, DroneFilming')
+    parser.add_argument('--save-flag', type=str, default='n1000', help='save name flag')
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
     parser.add_argument("--wr", type=float, default=5, help="writing rate")
     parser.add_argument('--debug', dest='debug', action='store_true')
@@ -172,8 +172,7 @@ if __name__ == "__main__":
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
 
-    if not os.path.exists('results'):
-        os.makedirs('results')
+    os.makedirs('results', exist_ok=True)
 
     if args.debug is True and not os.path.exists('images/%s-%d'%(args.dataset,args.test_data)):
         os.makedirs('images/%s-%d'%(args.dataset,args.test_data))

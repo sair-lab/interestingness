@@ -84,6 +84,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train Interestingness Networks')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="learning rate")
+    parser.add_argument('--save-flag', type=str, default='n1000', help='save name flag')
+    parser.add_argument("--memory-size", type=int, default=1000, help="number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
@@ -111,13 +113,11 @@ if __name__ == "__main__":
         train_data = DroneFilming(root=args.data_root, train=True, transform=transform)
     elif args.dataset == 'SubTF':
         train_data = SubTF(root=args.data_root, train=True, transform=transform)
-    elif args.dataset == 'PersonalVideo':
-        train_data = PersonalVideo(root=args.data_root, train=True, transform=transform)
 
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
 
     net,_ = torch.load(args.model_save)
-    net = Interestingness(net, 2000, 512, 10, 10, 10, 10)
+    net = Interestingness(net, args.memory_size, 512, 10, 10, 10, 10)
     net.set_train(True)
 
     if torch.cuda.is_available():
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
         if val_loss < best_loss:
             print("New best Model, saving...")
-            torch.save(net, args.model_save+'.'+args.dataset+'.interest.'+args.loss)
+            torch.save(net, args.model_save+'.'+args.dataset+'.'+args.save_flag+'.'+args.loss)
             best_loss = val_loss
             no_decrease = 0
                 
