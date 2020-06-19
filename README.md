@@ -71,13 +71,13 @@
          # --test-data The sequence ID in the dataset SubTF, [0-6] is avaiable
          # This will read the trained model "ae.pt.SubTF.n1000.mse" from short-term learning.
          
- * For convinence, you may run
+ * For convenience, you may run
  
          bash test.sh
  
  * This will generate results files that are compatible with the evaluation metric in [SubT](https://github.com/wang-chen/SubT.git)
 
- * You may skip this step, if you download our generated [result files](link).
+ * You may skip this step, if you download our generated [results](link).
 
 
 # Evaluation
@@ -89,6 +89,9 @@
  
       python performance.py --data-root [data-root] --save-flag n1000 --category interest-2
       # mean accuracy: [0.40703316 0.58456123 0.76820896]
+      
+* This will generate performance figures and create data curves for two categories in folder "performance".
+
 
 # Citation
 
