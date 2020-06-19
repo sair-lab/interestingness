@@ -75,7 +75,7 @@
  
          bash test.sh
  
- * This will generate results files that are compatible with the evaluation metric in [SubT](https://github.com/wang-chen/SubT.git)
+ * This will generate results files in folder "results", that is compatible with evaluation tools in [SubT](https://github.com/wang-chen/SubT.git)
 
  * You may skip this step, if you download our generated [results](link).
 
