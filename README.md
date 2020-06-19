@@ -1,6 +1,8 @@
+# Robotic interestingness via Unsupervised Online Learning
 
+ * [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer) at the [Air Lab](http://theairlab.org/) of [Carnegie Mellon University](http://theairlab.org).
 
-# Dependencies
+## Dependencies
    Matplotlib, PyTorch, TorchVision, OpenCV
    
       conda install -c conda-forge matplotlib
