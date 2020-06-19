@@ -54,26 +54,41 @@
 
 * Run
 
-      python3 train_interest.py --data-root [data-root] --model-save saves/ae.pt --dataset SubTF
+      python3 train_interest.py --data-root [data-root] --model-save saves/ae.pt --dataset SubTF --memory-size 1000 --save-flag n1000
       
       # This will read the previous model "ae.pt".
-      # A new model "ae.pt.SubTF.interest.mse" will be generated.
+      # A new model "ae.pt.SubTF.n1000.mse" will be generated.
  
-* You may skip this step, if you download the pre-trained [ae.pt.SubTF.interest.mse](link).
+* You may skip this step, if you download the pre-trained [ae.pt.SubTF.n1000.mse](link).
  
  
  ## On-line Learning
  
  * Run
  
-         python3 test_interest.py --data-root [data-root] --model-save saves/ae.pt.SubTF.interest.mse --dataset SubTF --test-data 0
+         python3 test_interest.py --data-root [data-root] --model-save saves/ae.pt.SubTF.n1000.mse --dataset SubTF --test-data 0
 
-         # --test-data The sequence ID in the dataset SubTF, 0-6 is avaiable
-         # This will read the trained model "ae.pt.SubTF.interest.mse" from short-term learning.
+         # --test-data The sequence ID in the dataset SubTF, [0-6] is avaiable
+         # This will read the trained model "ae.pt.SubTF.n1000.mse" from short-term learning.
+         
+ * For convinence, you may run
+ 
+         bash test.sh
  
  * This will generate results files that are compatible with the evaluation metric in [SubT](https://github.com/wang-chen/SubT.git)
 
-* You may skip this step, if you download our generated [result files](link).
+ * You may skip this step, if you download our generated [result files](link).
+
+
+# Evaluation
+
+* We follow the [SubT](https://github.com/wang-chen/SubT.git) tutorial for evaluation, simply run
+
+      python performance.py --data-root [data-root] --save-flag n1000 --category interest-1
+      # mean accuracy: [0.66235087 0.84281507 0.95655934]
+ 
+      python performance.py --data-root [data-root] --save-flag n1000 --category interest-2
+      # mean accuracy: [0.40703316 0.58456123 0.76820896]
 
 # Citation
 
