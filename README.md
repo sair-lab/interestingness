@@ -26,7 +26,7 @@
 
       conda install -c conda-forge pycocotools
 
-* Training:
+* Run
 
       python3 train_coder.py --data-root [data-root] --model-save saves/ae.pt
       
@@ -38,7 +38,7 @@
 
 ## Short-term Learning
 
-* Dowload the [SubT](http://theairlab.org/dataset/interestingness) front camear dataset (SubTF) and put into folder "data-root", so that it looks like:
+* Dowload the [SubT](http://theairlab.org/dataset/interestingness) front camera data (SubTF) and put into folder "data-root", so that it looks like:
 
       data-root
       ├──SubTF
@@ -52,7 +52,7 @@
          ├── ground-truth
          └── train
 
-* Train 
+* Run
 
       python3 train_interest.py --data-root [data-root] --model-save saves/ae.pt --dataset SubTF
       
@@ -84,7 +84,7 @@
         year = {2020}
       }
 
-
+---
 You may watch the following video to catch the idea of this work.
 
 [<img src="https://img.youtube.com/vi/gBBdYdUrIcw/maxresdefault.jpg" width="100%">](https://youtu.be/gBBdYdUrIcw)
