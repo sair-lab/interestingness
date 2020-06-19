@@ -4,6 +4,8 @@
 
 * [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer) at [Carnegie Mellon University](http://theairlab.org).
 
+* If you need a ROS wrapper for this project, go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
+
 ---
 ## Dependencies
    Matplotlib, PyTorch, TorchVision, OpenCV
