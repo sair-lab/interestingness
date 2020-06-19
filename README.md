@@ -31,4 +31,32 @@ Dependencies:
 
 * Training:
 
-      python3 train_coder.py --data-root [data-root] --save saves/at.pt
+      python3 train_coder.py --data-root [data-root] --model-save saves/ae.pt
+      
+      # This requires a long time for training on single GPU.
+      # Create a folder "saves" manually and a model named "ae.pt" will be saved.
+
+
+## Short-term Learning
+
+* Dowload the [SubT](http://theairlab.org/dataset/interestingness) front camear images (SubTF) and put into folder "data-root", so that it looks like:
+
+      data-root
+      ├──SubTF
+         ├── 0817-ugv0-tunnel0
+         ├── 0817-ugv1-tunnel0
+         ├── 0818-ugv0-tunnel1
+         ├── 0818-ugv1-tunnel1
+         ├── 0820-ugv0-tunnel1
+         ├── 0821-ugv0-tunnel0
+         ├── 0821-ugv1-tunnel0
+         ├── ground-truth
+         └── train
+
+* Train 
+
+      python train_interest.py --data-root [data-root] --model-save saves/ae.pt --dataset SubTF
+      
+      # This will read the previous model "ae.pt".
+      # A new model "ae.pt.SubTF.interest.mse" will be generated.
+ 
