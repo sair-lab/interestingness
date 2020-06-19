@@ -2,6 +2,7 @@
 
  * [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer) at the [Air Lab](http://theairlab.org/) of [Carnegie Mellon University](http://theairlab.org).
 
+---
 ## Dependencies
    Matplotlib, PyTorch, TorchVision, OpenCV
    
@@ -9,6 +10,7 @@
       conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
       conda install -c conda-forge opencv
 
+---
 ## Long-term Learning
 
 * Download [coco](http://cocodataset.org) dataset into folder "data-root", so that it looks like:
@@ -64,7 +66,7 @@
 * You may skip this step, if you download the pre-trained [ae.pt.SubTF.n1000.mse](https://github.com/wang-chen/interestingness/releases/download/v1.0/ae.pt.SubTF.n1000.mse) into folder "saves".
  
  
- ## On-line Learning
+## On-line Learning
  
  * Run
  
@@ -81,8 +83,8 @@
 
  * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness/releases/download/v1.0/results.zip).
 
-
-# Evaluation
+---
+## Evaluation
 
 * We follow the [SubT](https://github.com/wang-chen/SubT.git) tutorial for evaluation, simply run
 
@@ -94,8 +96,8 @@
       
 * This will generate performance figures and create data curves for two categories in folder "performance".
 
-
-# Citation
+---
+## Citation
 
       @article{wang2020visual,
         author = {Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
