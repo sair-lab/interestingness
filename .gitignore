@@ -108,3 +108,4 @@ venv.bak/
 saves/
 images/
 runs/
+.vscode/
