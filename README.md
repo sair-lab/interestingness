@@ -1,6 +1,8 @@
 # Visual Interestingness
 
- * [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer) at the [Air Lab](http://theairlab.org/) of [Carnegie Mellon University](http://theairlab.org).
+* Refer to the [project description](https://theairlab.org/interestingness) for more details.
+
+* [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer) at [Carnegie Mellon University](http://theairlab.org).
 
 ---
 ## Dependencies
@@ -105,6 +107,8 @@
         title = {{Visual Memorability for Robotic Interestingness via Unsupervised Online Learning}},
         year = {2020}
       }
+
+* Download [this paper](https://arxiv.org/pdf/2005.08829.pdf).
 
 ---
 You may watch the following video to catch the idea of this work.
