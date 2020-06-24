@@ -17,6 +17,9 @@
 ---
 ## Long-term Learning
 
+* You may skip this step, if you download the pre-trained [at.pt](https://github.com/wang-chen/interestingness/releases/download/v1.0/ae.pt) into folder "saves".
+
+
 * Download [coco](http://cocodataset.org) dataset into folder "data-root", so that it looks like:
 
       data-root
@@ -40,8 +43,6 @@
       
       # This requires a long time for training on single GPU.
       # Create a folder "saves" manually and a model named "ae.pt" will be saved.
-
-* You may skip this step, if you download the pre-trained [at.pt](https://github.com/wang-chen/interestingness/releases/download/v1.0/ae.pt) into folder "saves".
 
 
 ## Short-term Learning
