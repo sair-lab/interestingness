@@ -2,9 +2,11 @@
 
 * Refer to the [project description](https://theairlab.org/interestingness) for more details.
 
-* [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer) at [Carnegie Mellon University](http://theairlab.org).
+* This repo contains the source codes for the following paper, which is selected for **oral presentation** (2%) at ECCV 2020.
 
-* If you need a ROS wrapper for this project, go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
+     [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer), [Visual Memorability for Robotic Interestingness via Unsupervised Online Learning](https://arxiv.org/pdf/2005.08829.pdf), European Conference on Computer Vision (ECCV), 2020.
+
+* We also provide ROS wrapper for this project, you may go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
 
 ---
 ## Dependencies
@@ -104,11 +106,11 @@
 ---
 ## Citation
 
-      @article{wang2020visual,
-        author = {Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
-        journal = {arXiv preprint arXiv:2005.08829},
-        title = {{Visual Memorability for Robotic Interestingness via Unsupervised Online Learning}},
-        year = {2020}
+      @inproceedings{wang2020visual,
+        title={{Visual Memorability for Robotic Interestingness via Unsupervised Online Learning}},
+        author={Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
+        booktitle={European Conference on Computer Vision (ECCV 2020)},
+        year={2020},
       }
 
 * Download [this paper](https://arxiv.org/pdf/2005.08829.pdf).
