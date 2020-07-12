@@ -9,12 +9,9 @@
 * We also provide ROS wrapper for this project, you may go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
 
 ---
-## Dependencies
-   Matplotlib, PyTorch, TorchVision, OpenCV
-   
-      conda install -c conda-forge matplotlib
-      conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
-      conda install -c conda-forge opencv
+## Install Dependencies
+
+      pip3 install -r requirements.txt
 
 ---
 ## Long-term Learning
@@ -22,7 +19,11 @@
 * You may skip this step, if you download the pre-trained [at.pt](https://github.com/wang-chen/interestingness/releases/download/v1.0/ae.pt) into folder "saves".
 
 
-* Download [coco](http://cocodataset.org) dataset into folder "data-root", so that it looks like:
+* Download [coco](http://cocodataset.org) dataset into folder [data-root]:
+
+      bash download_coco.sh [data-root] # replace [data-root] by your desired location
+      
+     The dataset will be look like:
 
       data-root
       ├──coco
@@ -33,11 +34,6 @@
              ├── test2017
              ├── train2017
              └── val2017
-
-
-* Install coco dataset tools (required by PyTorch).
-
-      conda install -c conda-forge pycocotools
 
 * Run
 
