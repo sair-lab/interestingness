@@ -100,6 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
     parser.add_argument("--w-decay", type=float, default=1e-5, help="weight decay of the optimizer")
+    parser.add_argument("--num-workers", type=int, default=4, help="number of workers for dataloader")
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.set_defaults(self_loop=False)
     args = parser.parse_args(); print(args)
@@ -128,10 +129,10 @@ if __name__ == "__main__":
     test_annFile = os.path.join(args.annFile, 'coco/annotations/image_info_test2017/image_info_test2017.json')
 
     train_data = CocoDetection(root=train_root, annFile=train_annFile, transform=train_transform)
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
+    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
 
     val_data = CocoDetection(root=val_root, annFile=val_annFile, transform=val_transform)
-    val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False)
+    val_loader = Data.DataLoader(dataset=val_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=args.num_workers)
 
     if args.resume == True:
         net, best_loss = torch.load(args.model_save)
@@ -170,6 +171,6 @@ if __name__ == "__main__":
         net = nn.DataParallel(net.cuda(), device_ids=list(range(torch.cuda.device_count())))
 
     test_data = CocoDetection(root=test_root, annFile=test_annFile, transform=val_transform)
-    test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False)
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=args.num_workers)
     test_loss = performance(test_loader, net)
     print('val_loss: %.2f, test_loss, %.4f'%(best_loss, test_loss))
