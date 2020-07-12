@@ -87,7 +87,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train AutoEncoder')
     parser.add_argument("--net", type=str, default='AE', help="AE or VAE")
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--annFile", type=str, default='/data/datasets', help="learning rate")
     parser.add_argument('--crop-size', nargs='+', type=int, default=[384,384], help='image crop size')
     parser.add_argument("--model-save", type=str, default='saves/ae.pt', help="model save point")
     parser.add_argument('--resume', dest='resume', action='store_true')
@@ -124,9 +123,9 @@ if __name__ == "__main__":
     val_root = os.path.join(args.data_root, 'coco/images/val2017')
     test_root = os.path.join(args.data_root, 'coco/images/test2017')
 
-    train_annFile = os.path.join(args.annFile, 'coco/annotations/annotations_trainval2017/captions_train2017.json')
-    val_annFile = os.path.join(args.annFile, 'coco/annotations/annotations_trainval2017/captions_val2017.json')
-    test_annFile = os.path.join(args.annFile, 'coco/annotations/image_info_test2017/image_info_test2017.json')
+    train_annFile = os.path.join(args.data_root, 'coco/annotations/annotations_trainval2017/captions_train2017.json')
+    val_annFile = os.path.join(args.data_root, 'coco/annotations/annotations_trainval2017/captions_val2017.json')
+    test_annFile = os.path.join(args.data_root, 'coco/annotations/image_info_test2017/image_info_test2017.json')
 
     train_data = CocoDetection(root=train_root, annFile=train_annFile, transform=train_transform)
     train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
