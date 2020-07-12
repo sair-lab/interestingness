@@ -21,19 +21,19 @@
 
 * Download [coco](http://cocodataset.org) dataset into folder [data-root]:
 
-          bash download_coco.sh [data-root] # replace [data-root] by your desired location
+      bash download_coco.sh [data-root] # replace [data-root] by your desired location
       
      The dataset will be look like:
 
-           data-root
-           ├──coco
-              ├── annotations
-              │   ├── annotations_trainval2017
-              │   └── image_info_test2017
-              └── images
-                  ├── test2017
-                  ├── train2017
-                  └── val2017
+      data-root
+      ├──coco
+         ├── annotations
+         │   ├── annotations_trainval2017
+         │   └── image_info_test2017
+         └── images
+             ├── test2017
+             ├── train2017
+             └── val2017
 
 * Run
 
