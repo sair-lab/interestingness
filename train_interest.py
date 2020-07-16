@@ -98,6 +98,8 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, help='Random seed.')
     parser.add_argument('--loss', type=str, default='mse', help='loss criterion')
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
+    parser.add_argument("--rr", type=float, default=5, help="reading rate")
+    parser.add_argument("--wr", type=float, default=5, help="writing rate")
     parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
     args = parser.parse_args(); print(args)
     torch.manual_seed(args.seed)
@@ -118,6 +120,7 @@ if __name__ == "__main__":
 
     net,_ = torch.load(args.model_save)
     net = Interestingness(net, args.memory_size, 512, 10, 10, 10, 10)
+    net.memory.set_learning_rate(rr=args.rr, wr=args.wr)
     net.set_train(True)
 
     if torch.cuda.is_available():
