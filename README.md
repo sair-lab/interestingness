@@ -6,9 +6,10 @@
 
      [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer), [Visual Memorability for Robotic Interestingness via Unsupervised Online Learning](https://arxiv.org/pdf/2005.08829.pdf), European Conference on Computer Vision (ECCV), 2020.
 
-* You may also find the [slides on OneDrive](https://entuedu-my.sharepoint.com/:f:/g/personal/cwang017_e_ntu_edu_sg/Eh37rAUCP8tLkEuSuv64hi4Bq52QHRgpMLjT1Ar2jHhbiA?e=yKYb5b)
-
 * We also provide ROS wrapper for this project, you may go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
+
+* You may find the [slides on OneDrive](https://entuedu-my.sharepoint.com/:f:/g/personal/cwang017_e_ntu_edu_sg/Eh37rAUCP8tLkEuSuv64hi4Bq52QHRgpMLjT1Ar2jHhbiA?e=yKYb5b).
+
 
 ---
 ## Install Dependencies
