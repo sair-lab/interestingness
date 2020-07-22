@@ -8,8 +8,9 @@
 
 * We also provide ROS wrapper for this project, you may go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
 
-* You may find the [slides on OneDrive](https://entuedu-my.sharepoint.com/:f:/g/personal/cwang017_e_ntu_edu_sg/Eh37rAUCP8tLkEuSuv64hi4Bq52QHRgpMLjT1Ar2jHhbiA?e=yKYb5b).
+* You can find the [slides on OneDrive](https://entuedu-my.sharepoint.com/:f:/g/personal/cwang017_e_ntu_edu_sg/Eh37rAUCP8tLkEuSuv64hi4Bq52QHRgpMLjT1Ar2jHhbiA?e=yKYb5b).
 
+* You can find the [SubT](http://theairlab.org/dataset/interestingness) dataset and the [evaluation tools](https://github.com/wang-chen/SubT.git).
 
 ---
 ## Install Dependencies
