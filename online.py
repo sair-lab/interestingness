@@ -1,32 +1,5 @@
 #!/usr/bin/env python3
 
-# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
-
-# Redistribution and use in source and binary forms, with or without modification, are 
-# permitted provided that the following conditions are met:
-
-# 1. Redistributions of source code must retain the above copyright notice, this list of 
-# conditions and the following disclaimer.
-
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list 
-# of conditions and the following disclaimer in the documentation and/or other materials 
-# provided with the distribution.
-
-# 3. Neither the name of the copyright holder nor the names of its contributors may be 
-# used to endorse or promote products derived from this software without specific prior 
-# written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-# SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
-# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-# DAMAGE.
-
 import os
 import cv2
 import copy
@@ -38,20 +11,14 @@ import argparse
 import torchvision
 import numpy as np
 import torch.nn as nn
-import torch.optim as optim
-from torchvision import models
 import torch.utils.data as Data
-from torch.autograd import Variable
-from torch.nn import functional as F
-from torchvision.models.vgg import VGG
 import torchvision.transforms as transforms
-from torchvision.datasets import CocoDetection
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from interestingness import AE, VAE, AutoEncoder, Interestingness
-from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF, PersonalVideo
-from torchutil import count_parameters, show_batch, show_batch_origin, Timer, MovAvg
-from torchutil import ConvLoss, CosineLoss, CorrelationLoss, Split2d, Merge2d, PearsonLoss, FiveSplit2d
+from dataset import DroneFilming, SubTF
+from interestingness import Interestingness
+from torchutil import ConvLoss, CosineLoss, CorrelationLoss
+from torchutil import count_parameters, show_batch, Timer, MovAvg
+
 
 class Interest():
     '''
@@ -84,16 +51,19 @@ class Interest():
             self.interests = self.interests[:self.K]
 
 
-def performance(loader, net):
-    test_loss, time_use = 0, 0
+def performance(loader, net, args):
+    test_loss, time_use, timer = 0, 0, Timer()
+    movavg = MovAvg(args.window_size)
+    test_name = '%s-%d-%s-%s'%(args.dataset, args.test_data, time.strftime('%Y-%m-%d-%H:%M:%S'), args.save_flag)
+    interest = Interest(args.num_interest, 'results/%s.txt'%(test_name))
+    drawbox = ConvLoss(input_size=args.crop_size, kernel_size=args.crop_size//2, stride=args.crop_size//4)
+
     with torch.no_grad():
         for batch_idx, inputs in enumerate(loader):
             if batch_idx % args.skip_frames !=0:
                 continue
-            if torch.cuda.is_available():
-                inputs = inputs.cuda()
+            inputs = inputs.to(args.device)
             timer.tic()
-            inputs = Variable(inputs)
             outputs, loss = net(inputs)
             loss = movavg.append(loss)
             time_use += timer.end()
@@ -103,12 +73,11 @@ def performance(loader, net):
             frame = show_batch_box(inputs, batch_idx, loss.item())
             top_interests = interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
             if args.debug is True:
-                image = show_batch(torch.cat([outputs], dim=0), 'reconstruction')
-                recon = show_batch(torch.cat([(inputs-outputs).abs()], dim=0), 'difference')
-                cv2.imwrite('images/%s-%d/%s-interestingness-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), frame*255)
-                cv2.imwrite('images/%s-%d/%s-reconstruction-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), image*255)
-                cv2.imwrite('images/%s-%d/%s-difference-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), recon*255)
+                debug = show_batch(torch.cat([outputs, (inputs-outputs).abs()], dim=0), 'debug')
+                debug = np.concatenate([frame, debug], axis=1)
+                cv2.imwrite('images/%s-%d/%s-debug-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), debug*255)
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
+
     print("Total time using: %.2f seconds, %.2f ms/frame"%(time_use, 1000*time_use/(batch_idx+1)))
     cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
     return test_loss/(batch_idx+1)
@@ -151,10 +120,10 @@ def show_batch_box(batch, batch_idx, loss, box_id=None, show_now=True):
 
 
 if __name__ == "__main__":
-    # Arguements
     parser = argparse.ArgumentParser(description='Test Interestingness Networks')
+    parser.add_argument('--device', type=str, default='cuda', help='cpu, cuda:0, cuda:1, etc.')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
-    parser.add_argument("--model-save", type=str, default='saves/ae.pt.SubTF.n1000.mse', help="read model")
+    parser.add_argument("--model-save", type=str, default='saves/vgg16.pt.SubTF.n1000.mse', help="read model")
     parser.add_argument("--test-data", type=int, default=2, help='test data ID.')
     parser.add_argument("--seed", type=int, default=0, help='Random seed.')
     parser.add_argument("--crop-size", type=int, default=320, help='crop size')
@@ -167,15 +136,14 @@ if __name__ == "__main__":
     parser.add_argument("--wr", type=float, default=5, help="writing rate")
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.add_argument('--drawbox', dest='drawbox', action='store_true')
-    parser.set_defaults(debug=False)
-    parser.set_defaults(drawbox=False)
+    parser.set_defaults(debug=False, drawbox=False)
     args = parser.parse_args(); print(args)
+    datasets = {'dronefilming': DroneFilming, 'subtf': SubTF}
     torch.manual_seed(args.seed)
 
     os.makedirs('results', exist_ok=True)
-
-    if args.debug is True and not os.path.exists('images/%s-%d'%(args.dataset,args.test_data)):
-        os.makedirs('images/%s-%d'%(args.dataset,args.test_data))
+    if args.debug is True:
+        os.makedirs('images/%s-%d'%(args.dataset,args.test_data), exist_ok=True)
 
     transform = transforms.Compose([
             # transforms.CenterCrop(args.crop_size),
@@ -184,31 +152,14 @@ if __name__ == "__main__":
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    timer = Timer()
-    test_name = '%s-%d-%s-%s'%(args.dataset, args.test_data, time.strftime('%Y-%m-%d-%H:%M:%S'), args.save_flag)
-
-    if args.dataset == 'DroneFilming':
-        test_data = DroneFilming(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
-    elif args.dataset == 'SubTF':
-        test_data = SubTF(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
-    elif args.dataset == 'PersonalVideo':
-        test_data = PersonalVideo(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
-
+    Dataset = datasets[args.dataset.lower()]
+    test_data = Dataset(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
     test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
-    net = torch.load(args.model_save)
+    net = torch.load(args.model_save).to(args.device)
     net.set_train(False)
     net.memory.set_learning_rate(rr=args.rr, wr=args.wr)
 
-    interest = Interest(args.num_interest, 'results/%s.txt'%(test_name))
-    movavg = MovAvg(args.window_size)
-    if torch.cuda.is_available():
-        net = net.cuda()
-
-    drawbox = ConvLoss(input_size=args.crop_size, kernel_size=args.crop_size//2, stride=args.crop_size//4)
-    criterion = CorrelationLoss(args.crop_size//2, reduce=False, accept_translation=False)
-    fivecrop = FiveSplit2d(args.crop_size//2)
-
+    val_loss = performance(test_loader, net, args)
     print('number of parameters:', count_parameters(net))
-    val_loss = performance(test_loader, net)
     print('Done.')

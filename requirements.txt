@@ -1,6 +1,0 @@
-tqdm
-torch
-matplotlib
-torchvision
-pycocotools
-opencv-python
