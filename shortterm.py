@@ -34,14 +34,14 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=str, default='cuda', help='cpu, cuda:0, cuda:1, etc.')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--model-save", type=str, default='saves/vgg16.pt', help="learning rate")
-    parser.add_argument('--save-flag', type=str, default='n1000', help='save name flag')
-    parser.add_argument("--memory-size", type=int, default=1000, help="number of training epochs")
+    parser.add_argument('--save-flag', type=str, default='n100usage', help='save name flag')
+    parser.add_argument("--memory-size", type=int, default=100, help="number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-1, help="learning rate")
     parser.add_argument("--factor", type=float, default=0.1, help="ReduceLROnPlateau factor")
     parser.add_argument("--min-lr", type=float, default=1e-1, help="minimum lr for ReduceLROnPlateau")
-    parser.add_argument("--patience", type=int, default=10, help="patience of epochs for ReduceLROnPlateau")
+    parser.add_argument("--patience", type=int, default=2, help="patience of epochs for ReduceLROnPlateau")
     parser.add_argument("--epochs", type=int, default=20, help="number of training epochs")
-    parser.add_argument("--batch-size", type=int, default=1, help="number of minibatch size")
+    parser.add_argument("--batch-size", type=int, default=8, help="number of minibatch size")
     parser.add_argument("--momentum", type=float, default=0, help="momentum of the optimizer")
     parser.add_argument("--alpha", type=float, default=0.1, help="weight of TVLoss")
     parser.add_argument("--w-decay", type=float, default=1e-2, help="weight decay of the optimizer")
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--crop-size", type=int, default=320, help='loss compute by grid')
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
     parser.add_argument("--wr", type=float, default=5, help="writing rate")
+    parser.add_argument("--num-workers", type=int, default=4, help="number of workers for dataloader")
     parser.add_argument('--dataset', type=str, default='SubTF', help='dataset type (subT ot drone')
     args = parser.parse_args(); print(args)
     losses = {'l1': nn.L1Loss, 'mse': nn.MSELoss, 'cos':CosineLoss, 'pearson':PearsonLoss}
@@ -65,7 +66,7 @@ if __name__ == "__main__":
 
     Dataset = datasets[args.dataset.lower()]
     train_data = Dataset(root=args.data_root, train=True, transform=transform)
-    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
+    train_loader = Data.DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
 
     net,_ = torch.load(args.model_save)
     net = Interestingness(net, args.memory_size, 512, 10, 10, 10, 10).to(args.device)
@@ -84,9 +85,9 @@ if __name__ == "__main__":
         print('epoch:{} train:{} val:{}'.format(epoch, train_loss, val_loss))
 
         if val_loss < best_loss:
-            print("New best Model, saving...")
             torch.save(net, args.model_save+'.'+args.dataset+'.'+args.save_flag+'.'+args.loss)
             best_loss = val_loss
+            print("New best Model, saved.")
 
         if scheduler.step(val_loss):
             print("Early Stopping!")

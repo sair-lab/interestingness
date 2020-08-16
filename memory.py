@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
  
+import copy
 import torch
 import numpy as np
 from torch import nn
@@ -58,10 +59,12 @@ class Memory(nn.Module):
     def _address(self, key):
         key = key.view(key.size(0), 1, -1)
         memory = self.memory.view(self.N, -1)
-        w = F.cosine_similarity(memory, key, dim=-1)
-        w[w<self.usage] = ((w+1)*(1-self.usage)-1)[w<self.usage]
-        w = F.softmax((w*self.pi_2).tan()*self.wr, dim=1)
-        self.usage = torch.max((1-w)*self.usage, w*(1-self.usage))
+        c = F.cosine_similarity(memory, key, dim=-1)
+        s = F.softmax((c*self.pi_2).tan()*self.wr, dim=1)
+        t = copy.deepcopy(s)
+        s[s<self.usage] = (s*(1-self.usage))[s<self.usage]
+        w = t if s.abs().sum() < 1e-7 else s/s.abs().sum(-1,True)
+        self.usage = w + (1 - w) * self.usage
         return w.view(-1, self.N, 1, 1, 1)
 
     def _normalize_memory(self):

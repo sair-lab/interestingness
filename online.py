@@ -134,6 +134,7 @@ if __name__ == "__main__":
     parser.add_argument('--save-flag', type=str, default='n1000', help='save name flag')
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
     parser.add_argument("--wr", type=float, default=5, help="writing rate")
+    parser.add_argument("--num-workers", type=int, default=4, help="number of workers for dataloader")
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.add_argument('--drawbox', dest='drawbox', action='store_true')
     parser.set_defaults(debug=False, drawbox=False)
@@ -154,7 +155,7 @@ if __name__ == "__main__":
 
     Dataset = datasets[args.dataset.lower()]
     test_data = Dataset(root=args.data_root, train=False, test_data=args.test_data, transform=transform)
-    test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False)
+    test_loader = Data.DataLoader(dataset=test_data, batch_size=1, shuffle=False, pin_memory=True, num_workers=args.num_workers)
 
     net = torch.load(args.model_save).to(args.device)
     net.set_train(False)
