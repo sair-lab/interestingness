@@ -61,22 +61,22 @@
 
 * Run
 
-      python3 shortterm.py --data-root [data-root] --model-save saves/vgg16.pt --dataset SubTF --memory-size 1000 --save-flag n1000
+      python3 shortterm.py --data-root [data-root] --model-save saves/vgg16.pt --dataset SubTF --memory-size 100 --save-flag n100usage
       
       # This will read the previous model "ae.pt".
       # A new model "ae.pt.SubTF.n1000.mse" will be generated.
  
-* You may skip this step, if you download the pre-trained [vgg16.pt.SubTF.n1000.mse](https://github.com/wang-chen/interestingness_v2/releases/download/v1.0/vgg16.pt.SubTF.n1000.mse) into folder "saves".
+* You may skip this step, if you download the pre-trained [vgg16.pt.SubTF.n100usage.mse](https://github.com/wang-chen/interestingness-dev/releases/download/v1.0/vgg16.pt.SubTF.n100usage.mse) into folder "saves".
  
  
 ## On-line Learning
  
  * Run
  
-         python3 online.py --data-root [data-root] --model-save saves/vgg16.pt.SubTF.n1000.mse --dataset SubTF --test-data 0 --save-flag vgg16
+         python3 online.py --data-root [data-root] --model-save saves/vgg16.pt.SubTF.n100usage.mse --dataset SubTF --test-data 0 --save-flag n100usage
 
          # --test-data The sequence ID in the dataset SubTF, [0-6] is avaiable
-         # This will read the trained model "vgg16.pt.SubTF.n1000.mse" from short-term learning.
+         # This will read the trained model "vgg16.pt.SubTF.n100usage.mse" from short-term learning.
          
  * Alternatively, you may test all sequences by running
  
@@ -91,11 +91,11 @@
 
 * We follow the [SubT](https://github.com/wang-chen/SubT.git) tutorial for evaluation, simply run
 
-      python performance.py --data-root [data-root] --save-flag vgg16 --category normal --delta 1 2 3
-      # mean accuracy: [0.66410684 0.83252872 0.91957693]
+      python performance.py --data-root [data-root] --save-flag n100usage --category normal --delta 1 2 3
+      # mean accuracy: [0.6619413  0.83509241 0.92170787]
  
       python performance.py --data-root [data-root] --save-flag vgg16 --category difficult --delta 1 2 4
-      # mean accuracy: [0.4325405  0.59426775 0.7577122 ]
+      # mean accuracy: [0.4275881  0.60596248 0.76734053]
       
 * This will generate performance figures and create data curves for two categories in folder "performance".
 
