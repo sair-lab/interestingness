@@ -16,7 +16,7 @@
 ---
 ## Long-term Learning
 
-* You may skip this step, if you download the pre-trained [vgg16.pt](https://github.com/wang-chen/interestingness_v2/releases/download/v1.0/vgg16.pt) into folder "saves".
+* You may skip this step, if you download the pre-trained [vgg16.pt](https://github.com/wang-chen/interestingness-dev/releases/download/v1.0/vgg16.pt) into folder "saves".
 
 
 * Download [coco](http://cocodataset.org) dataset into folder [data-root]:
@@ -84,7 +84,7 @@
  
  * This will generate results files in folder "results".
 
- * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness/releases/download/v1.0/results.zip).
+ * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness-dev/releases/download/v1.0/results.zip).
 
 ---
 ## Evaluation
