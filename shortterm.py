@@ -13,7 +13,7 @@ import torchvision.transforms as transforms
 from autoencoder import AutoEncoder
 from interestingness import Interestingness
 from dataset import ImageData, Dronefilm, DroneFilming, SubT, SubTF
-from torchutil import EarlyStopScheduler, count_parameters, show_batch, RandomMotionBlur, CosineLoss, PearsonLoss
+from torchutil import EarlyStopScheduler, count_parameters, show_batch, CosineLoss, PearsonLoss, Timer
 
 
 def performance(loader, net, criterion, device='cuda', window='test'):
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     scheduler = EarlyStopScheduler(optimizer, factor=args.factor, verbose=True, min_lr=args.min_lr, patience=args.patience)
 
     print('number of parameters:', count_parameters(net))
-    best_loss = float('Inf')
+    best_loss, timer = float('Inf'), Timer()
     for epoch in range(args.epochs):
         train_loss = performance(train_loader, net, criterion, args.device, 'train')
         val_loss = performance(train_loader, net.listen, criterion, args.device, 'test')
@@ -94,3 +94,4 @@ if __name__ == "__main__":
             break
 
     print('test_loss, %.4f'%(best_loss))
+    timer.toc('Using time: ')
