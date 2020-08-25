@@ -24,17 +24,11 @@ class Interest():
     '''
     Maintain top K interests
     '''
-    def __init__(self, K, filename):
+    def __init__(self, K):
         self.K = K
         self.interests = []
-        self.filename = filename
-        f = open(self.filename, 'w')
-        f.close()
 
     def add_interest(self, tensor, loss, batch_idx, visualize_window=None):
-        f = open(self.filename, 'a+')
-        f.write("%d %f\n" % (batch_idx, loss))
-        f.close()
         self.interests.append((loss, tensor, batch_idx))
         self.interests.sort(key=self._sort_loss, reverse=True)
         self._maintain()
@@ -52,10 +46,11 @@ class Interest():
 
 
 def performance(loader, net, args):
-    test_loss, time_use, timer = 0, 0, Timer()
+    time_use, timer = 0, Timer()
     movavg = MovAvg(args.window_size)
     test_name = '%s-%d-%s-%s'%(args.dataset, args.test_data, time.strftime('%Y-%m-%d-%H:%M:%S'), args.save_flag)
-    interest = Interest(args.num_interest, 'results/%s.txt'%(test_name))
+    file_name = 'results/%s.txt'%(test_name)
+    interest = Interest(args.num_interest)
     drawbox = ConvLoss(input_size=args.crop_size, kernel_size=args.crop_size//2, stride=args.crop_size//4)
 
     with torch.no_grad():
@@ -66,8 +61,9 @@ def performance(loader, net, args):
             timer.tic()
             loss = net(inputs)
             loss = movavg.append(loss)
-            test_loss += loss.item()
             time_use += timer.end()
+            with open(file_name, 'a+') as f:
+                f.write("%d %f\n" % (batch_idx, loss))
             if args.noshow is False:
                 outputs = net.output()
             if args.drawbox is True and not args.noshow:
@@ -81,10 +77,9 @@ def performance(loader, net, args):
                 cv2.imwrite('images/%s-%d/%s-debug-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), debug*255)
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
 
-    print("Total time using: %.2f seconds, %.2f ms/frame"%(time_use, 1000*time_use/(batch_idx+1)))
     if args.noshow is False:
         cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
-    return test_loss/(batch_idx+1)
+    print("Total time using: %.2f seconds, %.2f ms/frame"%(time_use, 1000*time_use/(batch_idx+1)))
 
 
 def level_height(bar, ranges=[0.02, 0.08]):
@@ -166,6 +161,6 @@ if __name__ == "__main__":
     net.set_train(False)
     net.memory.set_learning_rate(rr=args.rr, wr=args.wr)
 
-    val_loss = performance(test_loader, net, args)
+    performance(test_loader, net, args)
     print('number of parameters:', count_parameters(net))
     print('Done.')
