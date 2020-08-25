@@ -17,7 +17,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets import CocoDetection
 
 from memory import Memory
-from torchutil import Split2d, Merge2d, CosineSimilarity
+from torchutil import Split2d, Merge2d
 
 
 class Interestingness(nn.Module):
@@ -27,7 +27,6 @@ class Interestingness(nn.Module):
         self.memory = Memory(N, C, h, w)
         self.split2d = Split2d(kernel_size=(h, w))
         self.merge2d = Merge2d(output_size=(H, W), kernel_size=(h, w))
-        self.similarity = CosineSimilarity()
         self.set_parameters()
         self.set_train(False)
 
