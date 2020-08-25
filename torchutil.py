@@ -318,6 +318,9 @@ class CorrelationSimilarity(nn.Module):
         g = g.view(x.size(0), y.size(0),-1)/xx/yy
         values, indices = torch.max(g, dim=-1)
         indices = torch.stack((indices // self.input_size[1], indices % self.input_size[1]), dim=-1)
+        values[values>+1] = +1 # prevent from overflow of  1
+        values[values<-1] = -1 # prevent from overflow of -1
+        assert((values>+1).sum()==0 and (values<-1).sum()==0)
         return values, indices
 
 
