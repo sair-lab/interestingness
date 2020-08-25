@@ -45,9 +45,11 @@ class Interestingness(nn.Module):
             # Go https://github.com/wang-chen/interaction.git
             self.states, self.coding = self.memory.read(coding), coding
             self.memory.write(coding)
-            states = self.merge2d(self.states)
-            output = self.ae.decoder(states)
-            return output, 1-F.cosine_similarity(coding.view(coding.size(1),-1), states.view(states.size(1),-1),dim=-1).mean()
+            self.reads = self.merge2d(self.states)
+            return 1-F.cosine_similarity(coding.view(coding.size(1),-1), self.reads.view(self.reads.size(1),-1),dim=-1).mean()
+
+    def output(self):
+        return self.ae.decoder(self.reads)
 
     def listen(self, x):
         coding = self.ae.encoder(x)

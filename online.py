@@ -64,22 +64,26 @@ def performance(loader, net, args):
                 continue
             inputs = inputs.to(args.device)
             timer.tic()
-            outputs, loss = net(inputs)
+            loss = net(inputs)
             loss = movavg.append(loss)
-            time_use += timer.end()
-            if args.drawbox is True:
-                drawbox(inputs, outputs)
             test_loss += loss.item()
-            frame = show_batch_box(inputs, batch_idx, loss.item())
-            top_interests = interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
-            if args.debug is True:
+            time_use += timer.end()
+            if args.noshow is False:
+                outputs = net.output()
+            if args.drawbox is True and not args.noshow:
+                drawbox(inputs, outputs)
+            if args.noshow is False:
+                frame = show_batch_box(inputs, batch_idx, loss.item())
+                top_interests = interest.add_interest(frame, loss, batch_idx, visualize_window='Top Interests')
+            if args.debug is True and not args.noshow:
                 debug = show_batch(torch.cat([outputs, (inputs-outputs).abs()], dim=0), 'debug')
                 debug = np.concatenate([frame, debug], axis=1)
                 cv2.imwrite('images/%s-%d/%s-debug-%06d.png'%(args.dataset,args.test_data,args.save_flag,batch_idx), debug*255)
             print('batch_idx:', batch_idx, 'loss:%.6f'%(loss.item()))
 
     print("Total time using: %.2f seconds, %.2f ms/frame"%(time_use, 1000*time_use/(batch_idx+1)))
-    cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
+    if args.noshow is False:
+        cv2.imwrite('results/%s.png'%(test_name), 255*top_interests)
     return test_loss/(batch_idx+1)
 
 
@@ -135,9 +139,10 @@ if __name__ == "__main__":
     parser.add_argument("--rr", type=float, default=5, help="reading rate")
     parser.add_argument("--wr", type=float, default=5, help="writing rate")
     parser.add_argument("--num-workers", type=int, default=4, help="number of workers for dataloader")
+    parser.add_argument('--noshow', dest='noshow', action='store_true')
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.add_argument('--drawbox', dest='drawbox', action='store_true')
-    parser.set_defaults(debug=False, drawbox=False)
+    parser.set_defaults(noshow=False, debug=False, drawbox=False)
     args = parser.parse_args(); print(args)
     datasets = {'dronefilming': DroneFilming, 'subtf': SubTF}
     torch.manual_seed(args.seed)
