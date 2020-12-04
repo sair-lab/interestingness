@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate Interestingness')
     parser.add_argument("--data-root", type=str, default='/data/datasets', help="dataset root folder")
     parser.add_argument("--dataset", type=str, default='SubTF', help="file save flag name")
-    parser.add_argument("--save-flag", type=str, default='r5w5', help="file save flag name")
+    parser.add_argument("--save-flag", type=str, default='n100usage', help="file save flag name")
     parser.add_argument('--root', type=str, default='results', help='results folder')
     parser.add_argument("--min-object", type=int, default=1, help="minimum number of top interests")
     parser.add_argument("--resolution", type=int, default=100, help="number of points of the plotted lines")

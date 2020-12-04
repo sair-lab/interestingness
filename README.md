@@ -10,6 +10,7 @@
 
 ---
 ## Install Dependencies
+    This version is tested on PyTorch 1.6 (1.7 should also be fine.)
 
       pip3 install -r requirements.txt
 
@@ -94,7 +95,7 @@
       python performance.py --data-root [data-root] --save-flag n100usage --category normal --delta 1 2 3
       # mean accuracy: [0.6619413  0.83509241 0.92170787]
  
-      python performance.py --data-root [data-root] --save-flag vgg16 --category difficult --delta 1 2 4
+      python performance.py --data-root [data-root] --save-flag n100usage --category difficult --delta 1 2 4
       # mean accuracy: [0.4275881  0.60596248 0.76734053]
       
 * This will generate performance figures and create data curves for two categories in folder "performance".
@@ -105,7 +106,7 @@
       @inproceedings{wang2020visual,
         title={{Visual Memorability for Robotic Interestingness via Unsupervised Online Learning}},
         author={Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
-        booktitle={European Conference on Computer Vision (ECCV 2020)},
+        booktitle={European Conference on Computer Vision (ECCV)},
         year={2020},
       }
 
