@@ -15,6 +15,8 @@
 ---
 ## Install Dependencies
 
+    This version is tested in PyTorch 1.6 (1.7 should also be fine)
+
       pip3 install -r requirements.txt
 
 ---

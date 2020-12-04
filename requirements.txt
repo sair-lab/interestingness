@@ -1,6 +1,6 @@
 tqdm
-torch
+torch==1.6.0
 matplotlib
-torchvision
+torchvision==0.7.0
 pycocotools
 opencv-python
