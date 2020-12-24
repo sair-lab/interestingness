@@ -108,12 +108,13 @@
 ---
 ## Citation
 
-      @inproceedings{wang2020visual,
-        title={{Visual Memorability for Robotic Interestingness via Unsupervised Online Learning}},
-        author={Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
-        booktitle={European Conference on Computer Vision (ECCV 2020)},
-        year={2020},
-      }
+          @inproceedings{wang2020visual,
+            title={Visual memorability for robotic interestingness via unsupervised online learning},
+            author={Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
+            booktitle={European Conference on Computer Vision (ECCV)},
+            year={2020},
+            organization={Springer}
+          }
 
 * Download [this paper](https://arxiv.org/pdf/2005.08829.pdf).
 
