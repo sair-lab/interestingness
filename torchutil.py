@@ -6,6 +6,7 @@ import math
 import torch
 import random
 import numbers
+import torch.fft
 import collections
 import torchvision
 from torch import nn
@@ -306,14 +307,13 @@ class CorrelationSimilarity(nn.Module):
         self.input_size = input_size = _pair(input_size)
         assert(input_size[-1]!=1) # FFT2 is wrong if last dimension is 1
         self.N = math.sqrt(input_size[0]*input_size[1])
-        self.fft_args = {'signal_ndim':2, 'normalized':True, 'onesided': True}
-        self.ifft_args = {**self.fft_args, **{'signal_sizes':input_size}}
+        self.fft_args = {'s': input_size, 'dim':[-2,-1], 'norm': 'ortho'}
         self.max = nn.MaxPool2d(kernel_size=input_size)
 
     def forward(self, x, y):
-        X = x.rfft(**self.fft_args).unsqueeze(1)
-        Y = y.rfft(**self.fft_args)
-        g = cdot(conj(X), Y).sum(dim=2).irfft(**self.ifft_args)*self.N
+        X = torch.fft.rfftn(x, **self.fft_args).unsqueeze(1)
+        Y = torch.fft.rfftn(y, **self.fft_args)
+        g = torch.fft.irfftn((X.conj()*Y).sum(2), **self.fft_args)*self.N
         xx = x.view(x.size(0),-1).norm(dim=-1).view(x.size(0), 1, 1)
         yy = y.view(y.size(0),-1).norm(dim=-1).view(1, y.size(0), 1)
         g = g.view(x.size(0), y.size(0),-1)/xx/yy
@@ -342,13 +342,13 @@ class Correlation(nn.Module):
         input_size = _pair(input_size)
         assert(input_size[-1]!=1) # FFT2 is wrong if last dimension is 1
         self.N = math.sqrt(input_size[0]*input_size[1])
-        self.fft_args = {'signal_ndim':2, 'normalized':True, 'onesided': True}
-        self.ifft_args = {**self.fft_args, **{'signal_sizes':input_size}}
+        self.fft_args = {'s': input_size, 'dim':[-2,-1], 'norm': 'ortho'}
         self.max = nn.MaxPool2d(kernel_size=input_size)
 
     def forward(self, x, y):
-        X, Y = x.rfft(**self.fft_args), y.rfft(**self.fft_args)
-        g = cdot(conj(X), Y).sum(dim=1).irfft(**self.ifft_args)*self.N
+        X = torch.fft.rfftn(x, **self.fft_args)
+        Y = torch.fft.rfftn(y, **self.fft_args)
+        g = torch.fft.irfftn((X.conj()*Y).sum(2), **self.fft_args)*self.N
         xx = x.view(x.size(0),-1).norm(dim=-1)
         yy = y.view(y.size(0),-1).norm(dim=-1)
         if self.accept_translation is True:
@@ -399,29 +399,6 @@ def rolls2d(inputs, shifts, dims=[-2,-1]):
         B = shift_size[0]
         o = torch.stack([inputs[i].roll(shifts[j,i].tolist(), dims) for j in range(B) for i in range(N)], dim=0)
         return o.view(B, N, C, H, W)
-
-
-def cdot(X, Y):
-    '''
-    complex dot multiplication
-    '''
-    assert(X.size(-1)==Y.size(-1)==2)
-    SX, SY = X.size(), Y.size()
-    X, Y = X.view(-1,2), Y.view(-1,2)
-    A, B = X[:,0].view(SX[:-1]), X[:,1].view(SX[:-1])
-    C, D = Y[:,0].view(SY[:-1]), Y[:,1].view(SY[:-1])
-    return torch.stack((A*C - B*D, B*C + A*D), dim=-1).contiguous()
-
-
-def conj(X):
-    '''
-    complex conjugate
-    '''
-    assert(X.size(-1)==2)
-    SX = X.size()
-    X = X.view(-1,2)
-    A, B = X[:,0].view(SX[:-1]), X[:,1].view(SX[:-1])
-    return torch.stack((A, -B), dim=-1).contiguous()
 
 
 def count_parameters(model):
