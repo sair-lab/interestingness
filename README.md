@@ -12,6 +12,8 @@
 ## Install Dependencies
     This version is tested on PyTorch 1.6 (1.7 should also be fine.)
 
+    This version is tested in PyTorch 1.6 (1.7 should also be fine)
+
       pip3 install -r requirements.txt
 
 ---
@@ -103,12 +105,13 @@
 ---
 ## Citation
 
-      @inproceedings{wang2020visual,
-        title={{Visual Memorability for Robotic Interestingness via Unsupervised Online Learning}},
-        author={Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
-        booktitle={European Conference on Computer Vision (ECCV)},
-        year={2020},
-      }
+          @inproceedings{wang2020visual,
+            title={Visual memorability for robotic interestingness via unsupervised online learning},
+            author={Wang, Chen and Wang, Wenshan and Qiu, Yuheng and Hu, Yafei and Scherer, Sebastian},
+            booktitle={European Conference on Computer Vision (ECCV)},
+            year={2020},
+            organization={Springer}
+          }
 
 * Download [this paper](https://arxiv.org/pdf/2005.08829.pdf).
 
