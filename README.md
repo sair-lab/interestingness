@@ -20,7 +20,7 @@
 ---
 ## Long-term Learning
 
-* You may skip this step, if you download the pre-trained [vgg16.pt](https://github.com/wang-chen/interestingness-dev/releases/download/v2.0/vgg16.pt) into folder "saves".
+* You may skip this step, if you download the pre-trained [vgg16.pt](https://github.com/wang-chen/interestingness/releases/download/v2.0/vgg16.pt) into folder "saves".
 
 
 * Download [coco](http://cocodataset.org) dataset into folder [data-root]:
@@ -70,7 +70,7 @@
       # This will read the previous model "ae.pt".
       # A new model "ae.pt.SubTF.n1000.mse" will be generated.
  
-* You may skip this step, if you download the pre-trained [vgg16.pt.SubTF.n100usage.mse](https://github.com/wang-chen/interestingness-dev/releases/download/v2.0/vgg16.pt.SubTF.n100usage.mse) into folder "saves".
+* You may skip this step, if you download the pre-trained [vgg16.pt.SubTF.n100usage.mse](https://github.com/wang-chen/interestingness/releases/download/v2.0/vgg16.pt.SubTF.n100usage.mse) into folder "saves".
  
  
 ## On-line Learning
@@ -88,7 +88,7 @@
  
  * This will generate results files in folder "results".
 
- * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness-dev/releases/download/v2.0/results.zip).
+ * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness/releases/download/v2.0/results.zip).
 
 ---
 ## Evaluation
