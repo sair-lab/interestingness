@@ -96,10 +96,10 @@
 * We follow the [SubT](https://github.com/wang-chen/SubT.git) tutorial for evaluation, simply run
 
       python performance.py --data-root [data-root] --save-flag n100usage --category normal --delta 1 2 3
-      # mean accuracy: [0.6619413  0.83509241 0.92170787]
+      # mean accuracy: [0.64455275 0.8368784  0.92165116 0.95906876]
  
       python performance.py --data-root [data-root] --save-flag n100usage --category difficult --delta 1 2 4
-      # mean accuracy: [0.4275881  0.60596248 0.76734053]
+      # mean accuracy: [0.42088688 0.57836163 0.67878168 0.75491805]
       
 * This will generate performance figures and create data curves for two categories in folder "performance".
 
