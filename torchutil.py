@@ -1,29 +1,4 @@
-# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
-
-# Redistribution and use in source and binary forms, with or without modification, are 
-# permitted provided that the following conditions are met:
-
-# 1. Redistributions of source code must retain the above copyright notice, this list of 
-# conditions and the following disclaimer.
-
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list 
-# of conditions and the following disclaimer in the documentation and/or other materials 
-# provided with the distribution.
-
-# 3. Neither the name of the copyright holder nor the names of its contributors may be 
-# used to endorse or promote products derived from this software without specific prior 
-# written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-# SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
-# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-# DAMAGE.
+#!/usr/bin/env python3
 
 import cv2
 import time
@@ -35,7 +10,6 @@ import collections
 import torchvision
 from torch import nn
 from itertools import repeat
-from torch import rfft, irfft
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
@@ -275,7 +249,9 @@ class EarlyStopScheduler(torch.optim.lr_scheduler.ReduceLROnPlateau):
     def __init__(self, optimizer, mode='min', factor=0.1, patience=10,
                     verbose=False, threshold=1e-4, threshold_mode='rel',
                     cooldown=0, min_lr=0, eps=1e-8):
-        super().__init__(optimizer, mode, factor, patience, verbose, threshold, threshold_mode, cooldown, min_lr, eps)
+        super().__init__(optimizer=optimizer, mode=mode, factor=factor, patience=patience,
+                            threshold=threshold, threshold_mode=threshold_mode,
+                            cooldown=cooldown, min_lr=min_lr, eps=eps, verbose=verbose)
         self.no_decrease = 0
 
     def step(self, metrics, epoch=None):
@@ -343,6 +319,9 @@ class CorrelationSimilarity(nn.Module):
         g = g.view(x.size(0), y.size(0),-1)/xx/yy
         values, indices = torch.max(g, dim=-1)
         indices = torch.stack((indices // self.input_size[1], indices % self.input_size[1]), dim=-1)
+        values[values>+1] = +1 # prevent from overflow of  1
+        values[values<-1] = -1 # prevent from overflow of -1
+        assert((values>+1).sum()==0 and (values<-1).sum()==0)
         return values, indices
 
 

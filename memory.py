@@ -1,30 +1,6 @@
-# Copyright <2019> <Chen Wang [https://chenwang.site], Carnegie Mellon University>
-
-# Redistribution and use in source and binary forms, with or without modification, are 
-# permitted provided that the following conditions are met:
-
-# 1. Redistributions of source code must retain the above copyright notice, this list of 
-# conditions and the following disclaimer.
-
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list 
-# of conditions and the following disclaimer in the documentation and/or other materials 
-# provided with the distribution.
-
-# 3. Neither the name of the copyright holder nor the names of its contributors may be 
-# used to endorse or promote products derived from this software without specific prior 
-# written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-# SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
-# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
-# DAMAGE.
+#!/usr/bin/env python3
  
+import copy
 import torch
 import numpy as np
 from torch import nn
@@ -35,20 +11,20 @@ from torchutil import CorrelationSimilarity, rolls2d
 class Memory(nn.Module):
     pi_2 = 3.14159/2
     def __init__(self, N=2000, C=512, H=7, W=7, rr=1, wr=1):
-        """Initialize the Memory Tensors.
+        """Initialize the Memory.
         N: Number of cubes in the memory.
         C: Channel of each cube in the memory
         H: Height of each cube in the memory
         W: Width of each cube in the memory
-        rr: reading rate [rr > 0] (\gamma_r in the paper)
-        wr: writing rate [wr > 0] (\gamma_w in the paper)
+        rr: reading rate [rr > 0] ($\gamma_r$ in the paper)
+        wr: writing rate [wr > 0] ($\gamma_w$ in the paper)
         """
         super(Memory, self).__init__()
         self.N, self.C, self.H, self.W = N, C, H, W
         self.set_learning_rate(rr, wr)
         self.register_buffer('memory', torch.zeros(N, C, H, W))
-        # nn.init.kaiming_uniform_(self.memory)
-        torch.nn.init.normal_(self.memory, 0.05, 0.027).relu_()
+        self.register_buffer('usage', torch.zeros(1, N))
+        nn.init.kaiming_uniform_(self.memory)
         self._normalize_memory()
         self.similarity = CorrelationSimilarity((H,W))
 
@@ -62,7 +38,7 @@ class Memory(nn.Module):
         key = self._normalize(key)
         w, trans = self._correlation_address(key)
         memory = rolls2d(self.memory, -trans)
-        return torch.sum(w * memory, dim=1)
+        return (w * memory).sum(dim=1)
 
     def write(self, keys):
         for i in range(keys.size(0)):
@@ -83,7 +59,12 @@ class Memory(nn.Module):
     def _address(self, key):
         key = key.view(key.size(0), 1, -1)
         memory = self.memory.view(self.N, -1)
-        w = F.softmax((F.cosine_similarity(memory, key, dim=-1)*self.pi_2).tan()*self.wr, dim=1)
+        c = F.cosine_similarity(memory, key, dim=-1)
+        s = F.softmax((c*self.pi_2).tan()*self.wr, dim=1)
+        t = copy.deepcopy(s)
+        s[s<self.usage] = (s*(1-self.usage))[s<self.usage]
+        w = t if s.abs().sum() < 1e-7 else s/s.abs().sum(-1,True)
+        self.usage = w + (1 - w) * self.usage
         return w.view(-1, self.N, 1, 1, 1)
 
     def _normalize_memory(self):
@@ -101,7 +82,7 @@ if __name__ == "__main__":
     import time
     logger =  SummaryWriter('runs/memory-'+str(time.time()))
 
-    N, B, C, H, W = 1, 1, 1, 3, 3
+    N, B, C, H, W = 10, 1, 1, 3, 3
     mem = Memory(N, C, H, W)
 
     def criterion(a, b):
