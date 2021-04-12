@@ -4,22 +4,21 @@
 
 * This code is for the following [paper](https://arxiv.org/pdf/2005.08829.pdf), which is selected for **oral presentation** (2%) at ECCV 2020.
 
-     [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebatian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer), [Visual Memorability for Robotic Interestingness via Unsupervised Online Learning](https://arxiv.org/pdf/2005.08829.pdf), European Conference on Computer Vision (ECCV), 2020.
+     [Chen Wang](https://chenwang.site), [Wenshan Wang](http://www.wangwenshan.com/), [Yuheng Qiu](https://theairlab.org/team/yuheng/), [Yafei Hu](https://theairlab.org/team/yafeih/), and [Sebastian Scherer](https://www.ri.cmu.edu/ri-faculty/sebastian-scherer), [Visual Memorability for Robotic Interestingness via Unsupervised Online Learning](https://arxiv.org/pdf/2005.08829.pdf), European Conference on Computer Vision (ECCV), 2020.
 
 * We also provide ROS wrapper for this project, you may go to [interestingness_ros](https://github.com/wang-chen/interestingness_ros).
 
 ---
 ## Install Dependencies
-    This version is tested on PyTorch 1.6 (1.7 should also be fine.)
 
-    This version is tested in PyTorch 1.6 (1.7 should also be fine)
+    This version is tested in PyTorch 1.7
 
       pip3 install -r requirements.txt
 
 ---
 ## Long-term Learning
 
-* You may skip this step, if you download the pre-trained [vgg16.pt](https://github.com/wang-chen/interestingness-dev/releases/download/v1.0/vgg16.pt) into folder "saves".
+* You may skip this step, if you download the pre-trained [vgg16.pt](https://github.com/wang-chen/interestingness-dev/releases/download/v2.0/vgg16.pt) into folder "saves".
 
 
 * Download [coco](http://cocodataset.org) dataset into folder [data-root]:
@@ -69,7 +68,7 @@
       # This will read the previous model "ae.pt".
       # A new model "ae.pt.SubTF.n1000.mse" will be generated.
  
-* You may skip this step, if you download the pre-trained [vgg16.pt.SubTF.n100usage.mse](https://github.com/wang-chen/interestingness-dev/releases/download/v1.0/vgg16.pt.SubTF.n100usage.mse) into folder "saves".
+* You may skip this step, if you download the pre-trained [vgg16.pt.SubTF.n100usage.mse](https://github.com/wang-chen/interestingness-dev/releases/download/v2.0/vgg16.pt.SubTF.n100usage.mse) into folder "saves".
  
  
 ## On-line Learning
@@ -87,7 +86,7 @@
  
  * This will generate results files in folder "results".
 
- * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness-dev/releases/download/v1.0/results.zip).
+ * You may skip this step, if you download our generated [results](https://github.com/wang-chen/interestingness-dev/releases/download/v2.0/results.zip).
 
 ---
 ## Evaluation
